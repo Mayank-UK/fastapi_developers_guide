@@ -1,0 +1,103 @@
+# Server manifest for the FastAPI Developers Guide (`guide` package).
+# Ranges live here; the committed uv.lock pins exact versions — the lock is
+# THE dependency contract, `uv sync --locked` never re-resolves.
+[project]
+name = "guide"
+version = "0.1.0"
+description = "FastAPI Developers Guide server: the typed content API that is the guide"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.20.0",
+    "argon2-cffi>=25.1.0",
+    "arq>=0.25.0",
+    "asyncpg>=0.32.0",
+    "babel>=2.18.0",
+    "fastapi>=0.115",
+    "grpcio>=1.84.0",
+    "itsdangerous>=2.2.0",
+    "motor>=3.7.1",
+    "pillow>=13.0.0",
+    "protobuf>=7.36.2",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "pyjwt>=2.15.1",
+    "redis>=8.1.0",
+    "sqlalchemy[asyncio]>=2.1.4",
+    "strawberry-graphql[fastapi]>=0.335.0",
+    "structlog>=24.4",
+    "uvicorn[standard]>=0.30",
+]
+
+# Dev tooling rides in the PEP 735 dev group (the uv convention): `uv sync`
+# installs it by default; production image builds pass --no-dev.
+[dependency-groups]
+dev = [
+    "grpcio-tools>=1.84.0",
+    "httpx>=0.27",
+    "mypy>=1.13",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.8",
+    "testcontainers[postgresql]>=4.15.0",
+]
+
+# Flat layout (`guide/` at server/ root): hatchling auto-detects the package
+# directory from the project name. A real build backend is required because
+# the prod image installs the guide package as a static wheel
+# (`uv sync --no-editable`).
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# Topic modules embed teaching prose and VERBATIM repo quotes — a quoted
+# line's length is its source file's business, not the topic module's.
+"guide/content/topics/*" = ["E501"]
+# Generated protobuf/gRPC code (guide.proto compiled by grpc_tools.protoc):
+# committed build output so deploys never need the compiler — never lint it,
+# never hand-edit it; the .proto is the source of truth (topic 15).
+"guide/grpcapi/guide_pb2*.py" = ["E501", "F401", "I001", "UP009"]
+
+[tool.mypy]
+strict = true
+plugins = ["pydantic.mypy"]
+python_version = "3.13"
+# The compiled contract is excluded — it is build output, and grpcio ships
+# no py.typed (overrides below make that silence explicit). Hand-written
+# modules stay fully strict.
+exclude = ["^guide/grpcapi/guide_pb2"]
+
+[[tool.mypy.overrides]]
+module = ["guide.grpcapi.guide_pb2", "guide.grpcapi.guide_pb2_grpc"]
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+# The servicer subclasses the skipped generated base (Any to mypy), which
+# strict flags as "Class cannot subclass Any" — the one unavoidable misc.
+module = ["guide.data.grpc.servicer"]
+disable_error_code = ["misc"]
+
+[[tool.mypy.overrides]]
+# grpcio and protobuf ship no library stubs (no py.typed); their APIs are
+# Any at the type layer by necessity — the domain port is the typed seam.
+module = ["grpc", "grpc.*", "google.protobuf", "google.protobuf.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    # Spins a REAL throwaway PostgreSQL via Docker (testcontainers). The
+    # dev/verify container has no docker.sock, so these tests probe for a
+    # reachable Docker daemon and SKIP (with the reason) when there is
+    # none; the host-run fallback command (docker.sock + TESTCONTAINERS_
+    # HOST_OVERRIDE mounted, `pytest -m testcontainers`) runs them for real.
+    "testcontainers: needs a reachable Docker daemon (host-run fallback run)",
+]

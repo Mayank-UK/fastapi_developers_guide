@@ -1,0 +1,53 @@
+# Polish message catalog for the i18n topic's UI string set.
+# REAL gettext file: hand-written (demo scope), charset UTF-8. Msgids are
+# the English SOURCE strings — classic gettext, so the default locale
+# needs no catalog. The plural header is babel's own expression for
+# Polish (babel.messages.plurals.get_plural("pl")) — three forms: one
+# (1), few (2-4 except 12-14), many (0, 5-21, 11-14, ...). CLDR adds a
+# fourth category "other" that fires only on fractions; integer counts
+# never reach it, which is why this three-form header and babel's CLDR
+# categories agree on every count the demo shows (tests pin it).
+msgid ""
+msgstr ""
+"Project-Id-Version: fastapi-developers-guide 1.0\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "Welcome to the FastAPI developers guide"
+msgstr "Witamy w przewodniku dla programistów FastAPI"
+
+msgid "Upload a file"
+msgstr "Wyślij plik"
+
+msgid "Download"
+msgstr "Pobierz"
+
+msgid "Search the guide"
+msgstr "Przeszukaj przewodnik"
+
+msgid "Save changes"
+msgstr "Zapisz zmiany"
+
+msgid "Cancel"
+msgstr "Anuluj"
+
+msgid "Delete"
+msgstr "Usuń"
+
+msgid "Loading…"
+msgstr "Wczytywanie…"
+
+msgid "Nothing here to see"
+msgstr "Niczego tu nie ma"
+
+msgid "Language"
+msgstr "Język"
+
+msgid "%d file uploaded"
+msgid_plural "%d files uploaded"
+msgstr[0] "%d plik został wysłany"
+msgstr[1] "%d pliki zostały wysłane"
+msgstr[2] "%d plików zostało wysłanych"

@@ -1,0 +1,186 @@
+# Dev stack: dev (devcontainer tooling) + server + client + data services.
+# Explicit compose project name: without it compose derives "docker" from
+# this file's .docker/ parent dir, which shows as a bare "docker" group in
+# Docker Desktop. It also keeps VS Code's stack and any manual compose
+# invocation in one project.
+name: fastapi_developers_guide
+
+services:
+  # The container VS Code attaches to (see .devcontainer/devcontainer.json):
+  # Python 3.13 + uv + Node 22 toolchain for tests, git, and builds. It runs
+  # no app — the server/client containers below run their own dev servers.
+  dev:
+    build:
+      context: ./../
+      dockerfile: ./.docker/Dockerfile.dev
+    image: fdg_dev_toolchain
+    container_name: fastapi_developers_guide_dev
+    init: true
+    command: sleep infinity
+    volumes:
+      # Live source; the anonymous volumes below keep container-only build
+      # outputs out of the host bind mount (host .venv/ and node_modules/
+      # stay empty by design — the express-family rule).
+      - ./../:/workspaces/fastapi_developers_guide
+      - /workspaces/fastapi_developers_guide/server/.venv
+      - /workspaces/fastapi_developers_guide/client/node_modules
+
+  # FastAPI dev server: uvicorn --reload against the bind-mounted source.
+  # Dependencies (server/.venv) were baked by the image build and survive in
+  # an anonymous volume, so boots skip the install entirely.
+  server:
+    build:
+      context: ./../
+      dockerfile: ./.docker/server/Dockerfile
+    image: fdg_server_dev
+    container_name: fastapi_developers_guide_server_dev
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - 8000:8000
+    environment:
+      # FDG_ env rails (pydantic-settings reads these; defaults point at
+      # localhost for host runs). Inside compose the data services are
+      # reachable by service name, not localhost.
+      - FDG_ENV=dev
+      - FDG_DATABASE_URL=postgresql+asyncpg://postgres:guide@postgres:5432/guide
+      - FDG_REDIS_URL=redis://redis:6379
+      - FDG_MONGO_URL=mongodb://mongo:27017
+    volumes:
+      # Live source; anonymous volume over /app/.venv keeps the image-built
+      # venv and keeps it off the host.
+      - ./../server:/app
+      - /app/.venv
+      # Named uv cache (shared with the host-side verification runs): first
+      # boot skips the full dependency download.
+      - fdg-uv:/root/.cache/uv
+    # Deliberately NO depends_on: postgres/redis/mongo are optional services
+    # (family discipline) — the server must boot and serve with any of them
+    # down; their healthchecks below exist for humans and later phases.
+
+  # Vite dev server: installs from the lockfile on every (re)create, then
+  # serves on 0.0.0.0 so the published port works from the host browser.
+  client:
+    build:
+      context: ./../
+      dockerfile: ./.docker/client/Dockerfile
+    image: fdg_client_dev
+    container_name: fastapi_developers_guide_client_dev
+    restart: unless-stopped
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
+    ports:
+      - 5174:5174
+    environment:
+      # Inside compose the server is reachable by service name, not localhost.
+      - API_PROXY_TARGET=http://server:8000
+    volumes:
+      # Anonymous node_modules volume: the container install never leaks onto
+      # the host, and the host's (intentionally empty) dir never shadows it.
+      - ./../client:/app
+      - /app/node_modules
+      # Named npm cache (shared with the host-side verification runs).
+      - fdg-npm:/root/.npm
+    depends_on:
+      - server
+
+  # The arq worker (topic 29): the separate-process half of background jobs.
+  # Reuses the server dev image + bind mount verbatim — only the command
+  # differs: sync the locked venv (idempotent; picks up new deps like arq
+  # without an image rebuild), then run the arq worker loop against the same
+  # redis the server enqueues on. Additive service: the server above is
+  # untouched; start it alone with
+  #   docker compose -f .docker/docker-compose.yml up -d arq-worker --no-deps
+  arq-worker:
+    image: fdg_server_dev
+    container_name: fastapi_developers_guide_arq_worker_dev
+    restart: unless-stopped
+    working_dir: /app
+    command: sh -c "uv sync --locked && .venv/bin/arq guide.worker.WorkerSettings"
+    environment:
+      - FDG_ENV=dev
+      - FDG_DATABASE_URL=postgresql+asyncpg://postgres:guide@postgres:5432/guide
+      - FDG_REDIS_URL=redis://redis:6379
+      - FDG_MONGO_URL=mongodb://mongo:27017
+    volumes:
+      - ./../server:/app
+      - /app/.venv
+      - fdg-uv:/root/.cache/uv
+    # Unlike the server (which must boot with redis down), the worker's whole
+    # job IS redis — start-order only, arq retries the connection itself.
+    depends_on:
+      - redis
+
+  # PostgreSQL 17 — the guide's only SQL engine (one dialect, tests against
+  # the real thing). postgres/guide/guide: dev-grade credentials in the same
+  # shape the spring guide uses; prod refuses this password via the
+  # FDG_DB_PASSWORD rail.
+  postgres:
+    image: postgres:17
+    container_name: fastapi_developers_guide_postgres_dev
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=guide
+      - POSTGRES_DB=guide
+    ports:
+      # Published so a host-run server or psql can reach it at 127.0.0.1:5432.
+      - 5432:5432
+    volumes:
+      - fdg-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d guide"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Redis — caching/session/pub-sub topics; the app degrades gracefully if
+  # it is down, so demos report "off" rather than failing the stack.
+  redis:
+    image: redis:7-alpine
+    container_name: fastapi_developers_guide_redis_dev
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    volumes:
+      - fdg-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # MongoDB — the MongoDB topic's engine, same optional-service deal as redis.
+  mongo:
+    image: mongo:8
+    container_name: fastapi_developers_guide_mongo_dev
+    restart: unless-stopped
+    ports:
+      - 27017:27017
+    volumes:
+      - fdg-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  fdg-pg-data:
+  fdg-redis-data:
+  fdg-mongo-data:
+  # External: reuse the standalone caches the host-side verification runs
+  # populate (docker run -v fdg-uv:/root/.cache/uv ... — the README one-liner).
+  # Without `external: true` compose prefixes these with the project name and
+  # creates EMPTY twins, silently forcing full dependency re-downloads. On a
+  # fresh machine before any verify run, pre-create them once:
+  #   docker volume create fdg-uv fdg-npm
+  fdg-uv:
+    name: fdg-uv
+    external: true
+  fdg-npm:
+    name: fdg-npm
+    external: true

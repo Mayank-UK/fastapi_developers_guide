@@ -1,0 +1,50 @@
+# German message catalog for the i18n topic's UI string set.
+# REAL gettext file: hand-written (demo scope), charset UTF-8, plural
+# header for German (one/other). Msgids are the English SOURCE strings —
+# classic gettext, which is why the default locale needs no catalog at
+# all. One message — "Language" — is deliberately left untranslated
+# (empty msgstr) so the fallback is visible on the panel: gettext then
+# serves the msgid itself.
+msgid ""
+msgstr ""
+"Project-Id-Version: fastapi-developers-guide 1.0\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Welcome to the FastAPI developers guide"
+msgstr "Willkommen im FastAPI-Entwicklerhandbuch"
+
+msgid "Upload a file"
+msgstr "Datei hochladen"
+
+msgid "Download"
+msgstr "Herunterladen"
+
+msgid "Search the guide"
+msgstr "Handbuch durchsuchen"
+
+msgid "Save changes"
+msgstr "Änderungen speichern"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Delete"
+msgstr "Löschen"
+
+msgid "Loading…"
+msgstr "Lädt…"
+
+msgid "Nothing here to see"
+msgstr "Hier gibt es nichts zu sehen"
+
+msgid "Language"
+msgstr ""
+
+msgid "%d file uploaded"
+msgid_plural "%d files uploaded"
+msgstr[0] "%d Datei wurde hochgeladen"
+msgstr[1] "%d Dateien wurden hochgeladen"

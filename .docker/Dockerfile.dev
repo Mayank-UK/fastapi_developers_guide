@@ -1,0 +1,14 @@
+# Dev toolchain container: Python 3.13 + uv with the Node 22 toolchain
+# layered on top — one container that can build and test both halves of the
+# repo. The base is the official uv image on Debian bookworm (glibc 2.36) and
+# the node layer is built on the same bookworm, so the copied binaries link
+# cleanly. COPY merges directories, so uv's own /usr/local entries survive
+# the overlay.
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm
+
+# bin/{node,npm,npx,corepack} + lib/node_modules from the official image —
+# the same layering trick the spring-boot guide uses for its Maven+Node dev
+# container.
+COPY --from=node:22-bookworm /usr/local/ /usr/local/
+
+WORKDIR /workspaces/fastapi_developers_guide

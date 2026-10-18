@@ -1,0 +1,40 @@
+# Production server image — multi-stage uv build. The builder installs the
+# locked dependency set into /app/.venv; the final stage is a slim CPython
+# image carrying only that venv (no uv, no compilers, no dev deps, non-root).
+# The venv's python symlinks point at /usr/local/bin/python3.13, which exists
+# at the same path in the final image (the documented uv Docker pattern).
+# Build context: repo root; server/pyproject.toml + server/uv.lock are the
+# required manifests.
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm AS build
+
+# copy (not hardlink) so the cross-stage COPY stays plain; bytecode-compile
+# for faster cold starts.
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
+
+WORKDIR /app
+
+# Manifests first: the dependency layer caches while only source churns.
+# --no-install-project skips building the guide package itself here.
+COPY server/pyproject.toml server/uv.lock ./
+RUN uv sync --locked --no-dev --no-install-project
+
+COPY server/ ./
+# Second sync installs the guide package into the venv as a static (built)
+# copy — the final image needs no source tree on disk.
+RUN uv sync --locked --no-dev --no-editable
+
+FROM python:3.13-slim-bookworm
+
+# Non-root runtime user (least privilege).
+RUN groupadd --system guide && useradd --system --gid guide --create-home guide
+
+WORKDIR /app
+COPY --from=build --chown=guide:guide /app/.venv /app/.venv
+
+ENV PATH="/app/.venv/bin:$PATH"
+
+USER guide
+EXPOSE 8000
+# Graceful shutdown: in-flight requests get 30s to drain before exit.
+CMD ["uvicorn", "guide.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-graceful-shutdown", "30"]

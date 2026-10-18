@@ -1,0 +1,111 @@
+# Production stack: prod-built server + nginx client + the same data services
+# as the dev stack. Self-contained by family convention (the express guide's
+# compose files duplicate rather than extend): running it never mutates the dev
+# stack. The distinct project name namespaces its volumes — prod data starts
+# fresh and never shares the dev databases. This file is minimal but honest:
+# no dev-grade secrets, no published data ports, required-variable rails fail
+# fast at `compose config` time — and the two signing secrets ride the same
+# rails as the database password, so a stack rendered without real secrets
+# cannot exist (the server's AppConfig refuses them a second time at boot).
+name: fastapi_developers_guide_prod
+
+services:
+  server:
+    build:
+      context: ./../
+      dockerfile: ./.docker/server/Dockerfile.prod
+    image: fdg_server_prod
+    container_name: fastapi_developers_guide_server_prod
+    restart: unless-stopped
+    ports:
+      - 8000:8000
+    environment:
+      - FDG_ENV=prod
+      # Compose-level fail-fast: the required-variable syntax makes an unset
+      # FDG_DB_PASSWORD a deploy-time error — `docker compose ... up` refuses
+      # to render the stack at all, before any container starts (the spring
+      # guide's SDG_DB_PASSWORD pattern). The image stays clean; the secret
+      # arrives from the deployer's environment.
+      - FDG_DATABASE_URL=postgresql+asyncpg://postgres:${FDG_DB_PASSWORD:?FDG_DB_PASSWORD must be set to a real database password}@postgres:5432/guide
+      # The signing secrets ride the SAME required-variable rail: unset
+      # values refuse at `compose config` time, and the server's AppConfig
+      # validator refuses any dev-default secret in this env a second time
+      # at boot — two independent doors, both closed.
+      - FDG_JWT_SECRET=${FDG_JWT_SECRET:?FDG_JWT_SECRET must be set to a real high-entropy signing secret}
+      - FDG_SESSION_SECRET=${FDG_SESSION_SECRET:?FDG_SESSION_SECRET must be set to a real high-entropy signing secret, distinct from FDG_JWT_SECRET}
+      # Data services by service name inside the compose network, mirroring
+      # the dev stack's rails.
+      - FDG_REDIS_URL=redis://redis:6379
+      - FDG_MONGO_URL=mongodb://mongo:27017
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+
+  client:
+    build:
+      context: ./../
+      dockerfile: ./.docker/client/Dockerfile.prod
+    image: fdg_client_prod
+    container_name: fastapi_developers_guide_client_prod
+    restart: unless-stopped
+    ports:
+      - 8001:80
+    depends_on:
+      - server
+
+  # Same definitions as the dev stack, minus the published ports: in prod the
+  # data services stay internal to the compose network.
+  postgres:
+    image: postgres:17
+    container_name: fastapi_developers_guide_postgres_prod
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      # Parity rail: the SAME required variable the server's
+      # FDG_DATABASE_URL consumes — the DB and the app agree by construction,
+      # and an unset value fails `compose config` up front.
+      - POSTGRES_PASSWORD=${FDG_DB_PASSWORD:?FDG_DB_PASSWORD must be set to a real database password}
+      - POSTGRES_DB=guide
+    volumes:
+      - fdg-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d guide"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: fastapi_developers_guide_redis_prod
+    restart: unless-stopped
+    volumes:
+      - fdg-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  mongo:
+    image: mongo:8
+    container_name: fastapi_developers_guide_mongo_prod
+    restart: unless-stopped
+    volumes:
+      - fdg-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  fdg-pg-data:
+  fdg-redis-data:
+  fdg-mongo-data:

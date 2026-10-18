@@ -1,0 +1,71 @@
+// The PostService contract: topics 11–14's posts substrate, gRPC-spelled.
+//
+// This file is the API's single source of truth — the HTTP router's shapes
+// (topic 11), the GraphQL schema (topic 13), and this service all project
+// the SAME domain, but only here is the contract a compiled artifact: the
+// generated guide_pb2*.py modules are produced from these lines by
+// grpc_tools.protoc (see pyproject and the terminal companion) and are
+// committed, so deploys never need the compiler.
+//
+// The file lives inside the guide.grpcapi package (not a top-level protos/
+// directory) on purpose: protoc derives generated import paths from the
+// .proto's path relative to the include root, so this placement makes the
+// generated guide_pb2_grpc.py import guide.grpcapi.guide_pb2 as a real
+// package module instead of a bare top-level one.
+
+syntax = "proto3";
+
+package guide;
+
+// One posts-substrate post as this contract serves it. Field names are
+// the substrate's vocabulary, snake_case because protobuf convention is
+// snake_case (the JSON mouth of the console preserves it). Tag numbers
+// are the field's identity on the wire — never reuse or change one.
+message PostReply {
+  string slug = 1;
+  string title = 2;
+  string author = 3;
+  string status = 4;
+  repeated string tags = 5;
+  string created_at = 6;
+}
+
+message GetPostRequest {
+  string slug = 1;
+}
+
+// The server-streaming request: one exact-match tag filter, like
+// GET /api/posts?tag=design — an empty tag streams the whole collection.
+message StreamPostsRequest {
+  string tag = 1;
+}
+
+// One client-streaming view event: a viewer looked at a post.
+message ViewEvent {
+  string slug = 1;
+  string viewer = 2;
+}
+
+// The client-streaming answer: one summary after the last event.
+message ViewsSummary {
+  uint32 events = 1;
+  uint32 unique_posts = 2;
+  uint32 unique_viewers = 3;
+  map<string, uint32> views_per_post = 4;
+}
+
+// One bidirectional chat note, echoed back by the service.
+message ChatNote {
+  string sender = 1;
+  string text = 2;
+}
+
+// The four RPC shapes, one service. `stream` on the RETURNS side is
+// server-streaming; on the PARAMETER side, client-streaming; on both,
+// bidirectional; on neither, unary.
+service PostService {
+  rpc GetPost(GetPostRequest) returns (PostReply);
+  rpc StreamPosts(StreamPostsRequest) returns (stream PostReply);
+  rpc CountViews(stream ViewEvent) returns (ViewsSummary);
+  rpc EchoChat(stream ChatNote) returns (stream ChatNote);
+}

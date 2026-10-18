@@ -1,0 +1,12 @@
+# Keep ZCode's file search/reads away from generated bulk — source lives in
+# server/, client/, and the root docs.
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+node_modules/
+dist/
+coverage/
+server/data/
+.git/

@@ -1,0 +1,31 @@
+// VS Code devcontainer — the standard dev path for this repo. The full dev
+// stack (this `dev` tooling container + server + client + postgres + redis +
+// mongo) is defined once in ../.docker/docker-compose.yml; VS Code attaches to
+// the `dev` service and starts the whole stack with it. The app containers run
+// their own dev servers (hot-reload via bind mounts, ports published to the
+// host), so integrated terminals are for tests/git/builds, not the app.
+{
+  "name": "fastapi-developers-guide",
+  "dockerComposeFile": "../.docker/docker-compose.yml",
+  "service": "dev",
+  "runServices": ["dev", "server", "client", "postgres", "redis", "mongo", "arq-worker"],
+  "workspaceFolder": "/workspaces/fastapi_developers_guide",
+  "shutdownAction": "stopCompose",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Python: language server (Pylance bundled), debugger, test runner.
+        "ms-python.python",
+        // Ruff: lint + format, matching the server's toolchain.
+        "charliermarsh.ruff",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+  // postCreateCommand arrives in Phase 0.B with server/pyproject.toml +
+  // uv.lock (and 0.C adds the client half):
+  //   "postCreateCommand": "bash -c \"cd server && uv sync\""
+  // (uv is already inside the image via .docker/Dockerfile.dev — no feature
+  // install needed.)
+}

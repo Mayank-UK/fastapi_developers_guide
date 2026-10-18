@@ -1,0 +1,18 @@
+# Build contexts are the repo root (.docker/*/Dockerfile*, Dockerfile.dev).
+# These never belong in an image; keeping them out also keeps context upload
+# small. Nothing the Dockerfiles COPY is excluded here.
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+**/*.egg-info
+**/dist
+**/coverage
+**/.env*
+**/*.md
+server/data
+.git
+**/.DS_Store
+.zcode/

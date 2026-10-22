@@ -50,9 +50,13 @@ jobs:
                   docker run -d --name fdg-redis \
                     -p 127.0.0.1:6379:6379 \
                     redis:7-alpine
+                  # Patch-pinned like the platform compose: runner kernels
+                  # >= 6.19 crash MongoDB 8.0's vendored TCMalloc before
+                  # 8.0.10 (SERVER-121912) — mongo:8 floating dies instantly
+                  # on affected runners.
                   docker run -d --name fdg-mongo \
                     -p 127.0.0.1:27017:27017 \
-                    mongo:8
+                    mongo:8.0.12
                   echo "127.0.0.1 postgres redis mongo" | sudo tee -a /etc/hosts
                   # Readiness gate (the same probes as the dev compose
                   # healthchecks): the first lifespan migration must not

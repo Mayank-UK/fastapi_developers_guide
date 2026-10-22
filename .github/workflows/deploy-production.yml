@@ -271,9 +271,26 @@ jobs:
                       # bare "container X is unhealthy" one-liner: dump
                       # each datastore's state, recent logs, and the
                       # host's kernel/disk/memory so the Actions log
-                      # carries the diagnosis (e.g. the SERVER-121912
-                      # kernel-refusal or a volume/disk failure).
-                      if ! docker compose -f "$PLATFORM_COMPOSE" -p fdg_platform up -d --wait; then
+                      # carries the diagnosis. Mongo additionally gets a
+                      # scoped self-heal: it is the OPTIONAL demo
+                      # datastore (optional-service discipline — the app
+                      # boots without it and demo collections re-seed on
+                      # demand), so a volume written by a mongod of a
+                      # different line (seen 2026-10-22: the volume
+                      # carried featureCompatibilityVersion '8.3' from a
+                      # manually-installed 8.3 binary that had run under
+                      # the mongo:8 tag; NO 8.0 patch can open it) is
+                      # unopenable by any image this pipeline pins. The
+                      # only recovery is a fresh volume: reset container +
+                      # volume and retry the boot ONCE, and ONLY on that
+                      # exact signature — PostgreSQL/Redis volumes are
+                      # NEVER touched, and any other mongo failure still
+                      # fails the deploy.
+                      platform_boot() {
+                        docker compose -f "$PLATFORM_COMPOSE" -p fdg_platform up -d --wait
+                      }
+
+                      dump_platform_diagnostics() {
                         echo "PLATFORM BOOT FAILED - diagnostics follow" >&2
                         for c in fdg_postgres fdg_redis fdg_mongo; do
                           echo "=== $c: $(docker inspect -f 'state={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} image={{.Config.Image}}' "$c" 2>/dev/null || echo not-present)" >&2
@@ -282,7 +299,22 @@ jobs:
                         echo "=== kernel: $(uname -r)" >&2
                         df -h / 2>&1 | sed 's/^/[df] /' >&2 || true
                         free -h 2>&1 | sed 's/^/[mem] /' >&2 || true
-                        exit 1
+                      }
+
+                      if ! platform_boot; then
+                        dump_platform_diagnostics
+                        if docker logs --tail 200 fdg_mongo 2>&1 | grep -q 'featureCompatibilityVersion'; then
+                          echo "fdg_mongo cannot open its volume (featureCompatibilityVersion mismatch); resetting the DISPOSABLE mongo demo volume" >&2
+                          docker rm -f fdg_mongo >/dev/null 2>&1 || true
+                          docker volume rm fdg_prod_mongo_data >/dev/null 2>&1 || true
+                          docker volume create fdg_prod_mongo_data >/dev/null
+                          if ! platform_boot; then
+                            dump_platform_diagnostics
+                            exit 1
+                          fi
+                        else
+                          exit 1
+                        fi
                       fi
 
                       # ── 3. Pick the inactive color; gate on platform health ─────

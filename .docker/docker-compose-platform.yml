@@ -74,20 +74,26 @@ services:
           - redis
 
   mongo:
-    # Patch-pinned (not floating mongo:8): GitHub runner kernels >= 6.19
-    # crash MongoDB 8.0's vendored TCMalloc at mongod startup — fatal
-    # SERVER-121912, fixed in 8.0.10+. 8.0.12 is the latest 8.0 patch
-    # carrying the fix; keep this in lockstep with the CI boot step.
-    image: mongo:8.0.12
+    # Pinned to the exact patch the production volume was written with
+    # (mongo:8 floating has resolved to 8.0.34 since 2026-10-17). Recent
+    # 8.0 patches carry the SERVER-121912 kernel detection — mongod
+    # refuses to start on Linux 6.19-7.0.13 — so leaving this floating
+    # risks silent version drift under the live datastore. The CI e2e
+    # job boots this file WITH .docker/docker-compose.platform-ci.yml,
+    # which swaps mongo to 8.0.12 (predates the rseq affair entirely,
+    # boots on every runner kernel) because e2e datastores are ephemeral
+    # per run. Bump this pin deliberately, after checking the kernel
+    # guidance in the 8.0 release notes.
+    image: mongo:8.0.34
     container_name: fdg_mongo
     restart: unless-stopped
     volumes:
       - mongo_data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
-      # Generous budget: a cold mongo:8.0.12 first boot on a loaded shared
-      # runner (CI e2e job) can outlast the family-default 10s/5x10s window
-      # and fail `up --wait` before mongod ever answers.
+      # Generous budget: a cold mongo first boot on a loaded shared runner
+      # (CI e2e job) can outlast the family-default 10s/5x10s window and
+      # fail `up --wait` before mongod ever answers.
       interval: 10s
       timeout: 10s
       retries: 18

@@ -267,7 +267,23 @@ jobs:
                       # color that should serve once the flip lands.
                       printf 'reverse_proxy fdg_client_%s:80\n' "$ACTIVE_COLOR" \
                         > "$ROOT/platform/upstream.caddy"
-                      docker compose -f "$PLATFORM_COMPOSE" -p fdg_platform up -d --wait
+                      # A failed platform boot must never surface as a
+                      # bare "container X is unhealthy" one-liner: dump
+                      # each datastore's state, recent logs, and the
+                      # host's kernel/disk/memory so the Actions log
+                      # carries the diagnosis (e.g. the SERVER-121912
+                      # kernel-refusal or a volume/disk failure).
+                      if ! docker compose -f "$PLATFORM_COMPOSE" -p fdg_platform up -d --wait; then
+                        echo "PLATFORM BOOT FAILED - diagnostics follow" >&2
+                        for c in fdg_postgres fdg_redis fdg_mongo; do
+                          echo "=== $c: $(docker inspect -f 'state={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} image={{.Config.Image}}' "$c" 2>/dev/null || echo not-present)" >&2
+                          docker logs --tail 60 "$c" 2>&1 | sed "s/^/[$c] /" >&2 || true
+                        done
+                        echo "=== kernel: $(uname -r)" >&2
+                        df -h / 2>&1 | sed 's/^/[df] /' >&2 || true
+                        free -h 2>&1 | sed 's/^/[mem] /' >&2 || true
+                        exit 1
+                      fi
 
                       # ── 3. Pick the inactive color; gate on platform health ─────
                       if [ "$HAD_ACTIVE_COLOR" -eq 1 ]; then

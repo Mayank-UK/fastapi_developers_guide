@@ -1,0 +1,13 @@
+# CI-ONLY override layered over docker-compose-platform.yml by the CI
+# e2e job (and nothing else — never the deploy, whose mongo must match
+# the patch the production volume was written with). The base file pins
+# mongo:8.0.34, which carries the SERVER-121912 kernel detection: mongod
+# detects Linux 6.19-7.0.13 and stops during startup, and GitHub's newer
+# hosted runners sit exactly in that range. mongo:8.0.12 (Aug 2025)
+# predates the whole rseq affair and boots on every kernel — and the e2e
+# datastores are ephemeral per run, so the version skew vs prod is
+# harmless. Drop this override once MongoDB ships a patch that actually
+# runs on those kernels.
+services:
+  mongo:
+    image: mongo:8.0.12

@@ -50,10 +50,11 @@ jobs:
                   docker run -d --name fdg-redis \
                     -p 127.0.0.1:6379:6379 \
                     redis:7-alpine
-                  # Patch-pinned like the platform compose: runner kernels
-                  # >= 6.19 crash MongoDB 8.0's vendored TCMalloc before
-                  # 8.0.10 (SERVER-121912) — mongo:8 floating dies instantly
-                  # on affected runners.
+                  # Patch-pinned like the e2e platform override: floating
+                  # mongo:8 currently resolves to 8.0.34, which detects
+                  # runner kernels 6.19-7.0.13 and stops during startup
+                  # (SERVER-121912). 8.0.12 predates the rseq affair and
+                  # boots on every kernel.
                   docker run -d --name fdg-mongo \
                     -p 127.0.0.1:27017:27017 \
                     mongo:8.0.12
@@ -218,8 +219,12 @@ jobs:
                   set +a
                   # Platform first, exactly as the deploy boots it: the
                   # app's startup migration is best-effort, so PostgreSQL
-                  # must be healthy before any server starts.
-                  docker compose -f .docker/docker-compose-platform.yml up -d --wait --wait-timeout 300
+                  # must be healthy before any server starts. The CI
+                  # override swaps mongo to 8.0.12 — the base file's
+                  # 8.0.34 (what the production volume runs) refuses to
+                  # start on runner kernels 6.19-7.0.13 (SERVER-121912).
+                  docker compose -f .docker/docker-compose-platform.yml \
+                    -f .docker/docker-compose.platform-ci.yml up -d --wait --wait-timeout 300
                   docker compose -f .docker/docker-compose.prod.yml \
                     -f .docker/docker-compose.ci.yml up -d --wait
 

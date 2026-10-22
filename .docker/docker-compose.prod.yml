@@ -1,111 +1,102 @@
-# Production stack: prod-built server + nginx client + the same data services
-# as the dev stack. Self-contained by family convention (the express guide's
-# compose files duplicate rather than extend): running it never mutates the dev
-# stack. The distinct project name namespaces its volumes — prod data starts
-# fresh and never shares the dev databases. This file is minimal but honest:
-# no dev-grade secrets, no published data ports, required-variable rails fail
-# fast at `compose config` time — and the two signing secrets ride the same
-# rails as the database password, so a stack rendered without real secrets
-# cannot exist (the server's AppConfig refuses them a second time at boot).
-name: fastapi_developers_guide_prod
-
+# PER-RELEASE APP STACK — booted per deploy under the project of one color:
+#   COLOR=blue  IMAGE_TAG=sha-abc1234 docker compose -p fdg_blue  -f <this file> up -d --wait
+#   COLOR=green IMAGE_TAG=sha-def5678 docker compose -p fdg_green -f <this file> up -d --wait
+# The deploy script ALWAYS exports COLOR deliberately; the ${COLOR:-blue}
+# default below only exists so a bare local `up` boots something (blue).
+# There is deliberately NO top-level name: the -p flag names the project,
+# and the two colors must never share one.
+#
+# The persistent platform (postgres + redis + mongo, project fdg_platform)
+# lives in docker-compose-platform.yml and is booted BEFORE any app stack:
+# the server's startup migration is best-effort, so the boot race is won by
+# deploy ORDERING (platform `up -d --wait` fully healthy first) — depends_on
+# cannot cross compose files. The app_internal network is project-scoped ON
+# PURPOSE: each color's `server` service-name DNS resolves only within its
+# own color, so nginx's baked `proxy_pass http://server:8000` always reaches
+# the SAME color's API, never the other release's.
 services:
   server:
-    build:
-      context: ./../
-      dockerfile: ./.docker/server/Dockerfile.prod
-    image: fdg_server_prod
-    container_name: fastapi_developers_guide_server_prod
+    image: "ghcr.io/mayank-uk/fastapi-guide-server:${IMAGE_TAG:?IMAGE_TAG is required}"
+    container_name: fdg_server_${COLOR:-blue}
     restart: unless-stopped
-    ports:
-      - 8000:8000
+    # No published ports — the API stays internal; nginx's /api proxy is the
+    # only caller. Debug hatch: - "127.0.0.1:8000:8000"
+    env_file:
+      - ./../server/.env.production
     environment:
+      # environment: beats env_file:, so these win over any .env.production
+      # values. The platform datastores are reachable by their network
+      # ALIASES on the shared fdg_backend network.
       - FDG_ENV=prod
       # Compose-level fail-fast: the required-variable syntax makes an unset
       # FDG_DB_PASSWORD a deploy-time error — `docker compose ... up` refuses
-      # to render the stack at all, before any container starts (the spring
-      # guide's SDG_DB_PASSWORD pattern). The image stays clean; the secret
-      # arrives from the deployer's environment.
+      # to render the stack at all, before any container starts. The deploy/
+      # CI shell sources server/.env.production so the SAME password the
+      # platform's POSTGRES_PASSWORD consumed lands in the app's URL.
       - FDG_DATABASE_URL=postgresql+asyncpg://postgres:${FDG_DB_PASSWORD:?FDG_DB_PASSWORD must be set to a real database password}@postgres:5432/guide
       # The signing secrets ride the SAME required-variable rail: unset
       # values refuse at `compose config` time, and the server's AppConfig
       # validator refuses any dev-default secret in this env a second time
-      # at boot — two independent doors, both closed.
+      # at boot — two independent doors, both closed. The deploy/CI shell
+      # sources server/.env.production (which carries real values for both)
+      # before any compose command, so the rail is always satisfiable.
       - FDG_JWT_SECRET=${FDG_JWT_SECRET:?FDG_JWT_SECRET must be set to a real high-entropy signing secret}
       - FDG_SESSION_SECRET=${FDG_SESSION_SECRET:?FDG_SESSION_SECRET must be set to a real high-entropy signing secret, distinct from FDG_JWT_SECRET}
-      # Data services by service name inside the compose network, mirroring
-      # the dev stack's rails.
       - FDG_REDIS_URL=redis://redis:6379
       - FDG_MONGO_URL=mongodb://mongo:27017
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      mongo:
-        condition: service_healthy
+    healthcheck:
+      # The runtime image is python:3.13-slim — no wget, no curl. The venv
+      # python (first on the image PATH) is the probe binary: urllib GET on
+      # the real liveness route, dependency-free by design (the app's own
+      # health contract).
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      # Generous on purpose: a cold boot on a fresh volume runs the startup
+      # migration (alembic 0001→head) before serving.
+      start_period: 30s
+    networks:
+      - app_internal
+      - fdg_backend
 
   client:
-    build:
-      context: ./../
-      dockerfile: ./.docker/client/Dockerfile.prod
-    image: fdg_client_prod
-    container_name: fastapi_developers_guide_client_prod
+    image: "ghcr.io/mayank-uk/fastapi-guide-client:${IMAGE_TAG:?IMAGE_TAG is required}"
+    container_name: fdg_client_${COLOR:-blue}
     restart: unless-stopped
-    ports:
-      - 8001:80
+    # No published ports — Caddy is the front door (TLS on :443) and reaches
+    # this container BY NAME (fdg_client_<color>) on the shared fdg_frontend
+    # network; nginx is the internal app server behind it. Debug hatch
+    # (loopback, non-TLS): - "127.0.0.1:8080:80"
+    networks:
+      - app_internal
+      - fdg_frontend
     depends_on:
-      - server
-
-  # Same definitions as the dev stack, minus the published ports: in prod the
-  # data services stay internal to the compose network.
-  postgres:
-    image: postgres:17
-    container_name: fastapi_developers_guide_postgres_prod
-    restart: unless-stopped
-    environment:
-      - POSTGRES_USER=postgres
-      # Parity rail: the SAME required variable the server's
-      # FDG_DATABASE_URL consumes — the DB and the app agree by construction,
-      # and an unset value fails `compose config` up front.
-      - POSTGRES_PASSWORD=${FDG_DB_PASSWORD:?FDG_DB_PASSWORD must be set to a real database password}
-      - POSTGRES_DB=guide
-    volumes:
-      - fdg-pg-data:/var/lib/postgresql/data
+      # Long form: the app tier waits for its API — same color, same
+      # project, so the gate still works per release.
+      server:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d guide"]
-      interval: 10s
+      # Prove the app tier answers, independent of the API gate. nginx:alpine
+      # ships busybox wget.
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/"]
+      interval: 30s
       timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  redis:
-    image: redis:7-alpine
-    container_name: fastapi_developers_guide_redis_prod
-    restart: unless-stopped
-    volumes:
-      - fdg-redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      retries: 3
       start_period: 5s
 
-  mongo:
-    image: mongo:8
-    container_name: fastapi_developers_guide_mongo_prod
-    restart: unless-stopped
-    volumes:
-      - fdg-mongo-data:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-volumes:
-  fdg-pg-data:
-  fdg-redis-data:
-  fdg-mongo-data:
+networks:
+  # Plain project-scoped network: fdg_blue_app_internal / fdg_green_app_internal.
+  # THIS is the isolation unit — nginx's `proxy_pass http://server:8000` and
+  # this file's depends_on resolve `server` inside the color's own network.
+  app_internal: {}
+  # Shared with the platform stack (external, created by the deploy): caddy
+  # reaches fdg_client_<color> here.
+  fdg_frontend:
+    name: fdg_frontend
+    external: true
+  # Shared with the platform stack: postgres + redis + mongo live here by
+  # alias.
+  fdg_backend:
+    name: fdg_backend
+    external: true

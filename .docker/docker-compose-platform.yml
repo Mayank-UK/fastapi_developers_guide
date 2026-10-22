@@ -1,0 +1,109 @@
+# PERSISTENT PLATFORM STACK — booted once and untouched by releases.
+#
+# Project fdg_platform owns everything that OUTLIVES a deployment: the three
+# datastores (postgres, redis, mongo), same images/env/healthchecks as the
+# dev stack and the old self-contained prod stack carried. The TLS edge is
+# NOT in this file — it is the infra repo's ONE shared `caddy` container
+# (its own compose project at /opt/caddy on the VM, the only publisher of
+# 80/443, serving every app on the box), which joins the external
+# fdg_frontend network to reach this app's fdg_client_<color> containers by
+# name. The seam between the stacks is the FLIP FILE
+# ~/fastapi_developers_guide/platform/upstream.caddy (one line:
+# reverse_proxy fdg_client_<color>:80): the deploy writes it, the shared
+# caddy bind-mounts it read-only, and a release activates the flip with
+# `docker exec caddy caddy reload --config /etc/caddy/Caddyfile` — graceful,
+# no TLS blip.
+#
+# The datastore boot-race guarantee is enforced by DEPLOY ORDERING here:
+# `up -d --wait` must report all three datastores healthy BEFORE any app
+# stack starts — depends_on cannot cross compose files. The server itself
+# boots with any datastore down (the optional-service discipline), but its
+# startup migration is BEST-EFFORT: a server that boots before PostgreSQL
+# skips `alembic upgrade head` and keeps serving without the schema until
+# restarted — platform-first ordering closes that window on every deploy.
+#
+# Volumes are EXTERNAL on purpose (fdg_prod_*): the deploy creates them
+# idempotently before the first boot and they survive every release flip —
+# the databases are platform state, never per-color state.
+name: fdg_platform
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: fdg_postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      # Parity rail: the SAME required variable the app stacks'
+      # FDG_DATABASE_URL consumes — the DB and the app agree by
+      # construction, and an unset value fails `compose config` up front.
+      # The deploy/CI shell supplies it by sourcing server/.env.production.
+      - POSTGRES_PASSWORD=${FDG_DB_PASSWORD:?FDG_DB_PASSWORD must be set to a real database password}
+      - POSTGRES_DB=guide
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d guide"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      fdg_backend:
+        # The alias keeps the app stacks' postgres hostnames (the
+        # FDG_DATABASE_URL shape ...@postgres:5432/...) resolving without
+        # knowing this stack's service names.
+        aliases:
+          - postgres
+
+  redis:
+    image: redis:7-alpine
+    container_name: fdg_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      fdg_backend:
+        aliases:
+          - redis
+
+  mongo:
+    image: mongo:8
+    container_name: fdg_mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      fdg_backend:
+        aliases:
+          - mongo
+
+networks:
+  fdg_backend:
+    name: fdg_backend
+    external: true
+
+volumes:
+  # Created idempotently by the deploy (external: compose looks them up,
+  # never creates them) — platform data survives every release flip.
+  postgres_data:
+    name: fdg_prod_postgres_data
+    external: true
+  redis_data:
+    name: fdg_prod_redis_data
+    external: true
+  mongo_data:
+    name: fdg_prod_mongo_data
+    external: true

@@ -24,4 +24,4 @@ Client:
 docker run --rm -v "$PWD/client":/app -w /app -v fdg-npm:/root/.npm node:22-bookworm bash -lc 'flock /app/.verify.lock bash -c "npm ci && npm test"'
 ```
 
-When Docker files change: `docker compose -f .docker/docker-compose.yml config -q && docker compose -f .docker/docker-compose.prod.yml config -q`.
+When Docker files change: `docker compose -f .docker/docker-compose.yml config -q`, plus — after copying `server/.env.production.example` to `server/.env.production` and sourcing it (`set -a; . server/.env.production; set +a`) so the required-variable rails resolve — `docker compose -f .docker/docker-compose-platform.yml config -q` and `docker compose -f .docker/docker-compose.prod.yml -f .docker/docker-compose.ci.yml config -q`.

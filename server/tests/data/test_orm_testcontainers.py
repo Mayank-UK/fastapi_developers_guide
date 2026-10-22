@@ -2,7 +2,7 @@
 
 This is the testcontainers wiring the whole guide uses from topic 18
 on: spin up a disposable PostgreSQL container, point Alembic's FULL
-chain at it (``0001 → 0003``, nothing pre-applied), and prove the ORM
+chain at it (``0001 → 0004``, nothing pre-applied), and prove the ORM
 stack works on a database nobody seeded or migrated by hand — create,
 eager load, commit a version bump, refuse a stale write. If this
 passes, the migrations + models + sessions are self-sufficient; that
@@ -111,12 +111,12 @@ def sessions(engine: AsyncEngine) -> async_sessionmaker:
 
 
 async def test_migrations_apply_to_head_on_a_clean_database(engine: AsyncEngine) -> None:
-    """The full chain 0001 → 0003 runs on an empty PostgreSQL."""
+    """The full chain 0001 → 0004 runs on an empty PostgreSQL."""
     async with engine.connect() as connection:
         current = (
             await connection.exec_driver_sql("SELECT version_num FROM alembic_version")
         ).scalar()
-    assert current == "0003"
+    assert current == "0004"
 
 
 async def test_orm_round_trip_on_a_clean_database(
@@ -211,8 +211,8 @@ async def test_the_probe_adapter_works_on_a_clean_database(
 
 
 def test_alembic_config_targets_the_given_url(container_url: str) -> None:
-    """The chain the container ran is this repo's chain — 0001 → 0003."""
+    """The chain the container ran is this repo's chain — 0001 → 0004."""
     from alembic.script import ScriptDirectory
 
     script = ScriptDirectory.from_config(build_alembic_config(container_url))
-    assert script.get_current_head() == "0003"
+    assert script.get_current_head() == "0004"

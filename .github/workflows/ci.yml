@@ -26,10 +26,98 @@ jobs:
                   # contract); uv fetches the pinned CPython itself.
                   working-directory: server
                   cache: true
+
+            # The integration tests dial the dev-stack datastore HOSTNAMES:
+            # tests/{pg,redis,mongo}_url.py pin the compose service names
+            # (postgres/redis/mongo), and conftest neutralizes every FDG_*
+            # var, so nothing redirects them elsewhere. A bare runner
+            # resolves none of those names — boot the same image versions
+            # the dev compose runs, publishing the default ports on the
+            # loopback, then alias the service names to 127.0.0.1
+            # (passwordless sudo on hosted runners). The suite then behaves
+            # exactly as inside the dev network: each datastore test's
+            # `with TestClient(app)` runs the best-effort lifespan
+            # migration, so a FRESH PostgreSQL converges on the full chain.
+            - name: Boot the datastores behind the dev-stack hostnames
+              run: |
+                  set -euo pipefail
+                  docker run -d --name fdg-pg \
+                    -p 127.0.0.1:5432:5432 \
+                    -e POSTGRES_USER=postgres \
+                    -e POSTGRES_PASSWORD=guide \
+                    -e POSTGRES_DB=guide \
+                    postgres:17
+                  docker run -d --name fdg-redis \
+                    -p 127.0.0.1:6379:6379 \
+                    redis:7-alpine
+                  docker run -d --name fdg-mongo \
+                    -p 127.0.0.1:27017:27017 \
+                    mongo:8
+                  echo "127.0.0.1 postgres redis mongo" | sudo tee -a /etc/hosts
+                  # Readiness gate (the same probes as the dev compose
+                  # healthchecks): the first lifespan migration must not
+                  # race a still-initializing PostgreSQL.
+                  for _ in $(seq 1 30); do
+                    if docker exec fdg-pg pg_isready -U postgres -d guide >/dev/null 2>&1 \
+                      && docker exec fdg-redis redis-cli ping >/dev/null 2>&1 \
+                      && docker exec fdg-mongo mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' >/dev/null 2>&1; then
+                      echo 'datastores ready'
+                      exit 0
+                    fi
+                    sleep 2
+                  done
+                  echo 'datastores did not become ready within 60s' >&2
+                  docker logs fdg-pg || true
+                  docker logs fdg-redis || true
+                  docker logs fdg-mongo || true
+                  exit 1
+
             - run: uv sync --locked
+
+            # The tests/data adapter tests assume the dev-stack POSTURE:
+            # not just migrated but SEEDED — the outbox writes as a seeded
+            # author, and the ORM probe's deterministic SQL-count pins
+            # expect the 12-post seed dataset. In the dev stack the
+            # running server's lifespan migrates and the demos seed
+            # idempotently; on this fresh PostgreSQL do both once,
+            # explicitly, through the app's own entry points (no schema
+            # or seed logic duplicated here). AppConfig's code-default
+            # URL is localhost — where the boot step published PostgreSQL.
+            - name: Migrate and seed the fresh PostgreSQL
+              run: |
+                  uv run python -c '
+                  import asyncio
+
+                  from sqlalchemy.ext.asyncio import create_async_engine
+
+                  from guide.core.config import AppConfig
+                  from guide.data.db.lifecycle import upgrade_database_to_head
+                  from guide.data.db.repository import PgGuideRepository
+
+                  url = AppConfig().database_url  # the code default: localhost
+                  upgrade_database_to_head(url)
+
+                  async def seed() -> None:
+                      engine = create_async_engine(url)
+                      try:
+                          await PgGuideRepository(engine).ensure_seed()
+                      finally:
+                          await engine.dispose()
+
+                  asyncio.run(seed())
+                  print("fresh PostgreSQL migrated and seeded:", url)
+                  '
+
             - run: uv run pytest -q
             - run: uv run ruff check .
             - run: uv run mypy guide
+
+            - name: Remove the datastore containers
+              if: always()
+              # `|| true`: hygiene must never mask a green (or already
+              # red) suite — some containers may not exist if the boot
+              # step itself failed partway.
+              run: docker rm -f fdg-pg fdg-redis fdg-mongo 2>/dev/null || true
 
     client:
         runs-on: ubuntu-latest

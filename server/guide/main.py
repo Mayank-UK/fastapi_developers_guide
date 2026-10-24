@@ -208,6 +208,7 @@ from guide.presentation.routers.demo import scaling as demo_scaling
 from guide.presentation.routers.demo import scenario as demo_scenario
 from guide.presentation.routers.demo import security as demo_security
 from guide.presentation.routers.demo import testing as demo_testing
+from guide.presentation.routers.demo import thirdparty as demo_thirdparty
 from guide.presentation.routers.demo import validation as demo_validation
 
 APP_TITLE: Final = "FastAPI Developers Guide"
@@ -517,6 +518,13 @@ def create_app() -> FastAPI:
     # through this very app, real repo reads, honest manual verdicts where
     # no automation can judge.
     app.include_router(demo_best.router)
+    # Topic 42's third-party hub: the integrate-vs-build walk verified
+    # against the manifest and the server tree at request time, the real
+    # integration inventory, the key/secret surface as names (never
+    # values), and the live quotas — the panel the third-party topic
+    # teaches around, degraded honestly where the repo root is not
+    # mounted.
+    app.include_router(demo_thirdparty.router)
     return app
 
 

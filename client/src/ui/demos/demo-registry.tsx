@@ -95,6 +95,9 @@ const PerfBenchDemo = lazy(() => import('./perf/bench_demo'));
 const ReliabilityBreakerDemo = lazy(() => import('./reliability/breaker_demo'));
 const ScalingStatelessDemo = lazy(() => import('./scaling/stateless_demo'));
 const BestChecklistDemo = lazy(() => import('./best/checklist_demo'));
+const ThirdPartyHubDemo = lazy(() => import('./thirdparty/hub_demo'));
+const ArchSagaDemo = lazy(() => import('./arch/saga_demo'));
+const ArchEventStoreDemo = lazy(() => import('./arch/eventstore_demo'));
 
 export const demoRegistry: DemoRegistry = {
   'py:runtime-types': RuntimeTypesDemo,
@@ -156,4 +159,7 @@ export const demoRegistry: DemoRegistry = {
   'reliability:breaker': ReliabilityBreakerDemo,
   'scaling:stateless': ScalingStatelessDemo,
   'best:checklist': BestChecklistDemo,
+  'thirdparty:hub': ThirdPartyHubDemo,
+  'arch:saga': ArchSagaDemo,
+  'arch:eventstore': ArchEventStoreDemo,
 };

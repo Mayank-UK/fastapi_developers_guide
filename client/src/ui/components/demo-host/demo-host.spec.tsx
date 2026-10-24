@@ -115,6 +115,9 @@ describe('DemoHost', () => {
       'reliability:breaker',
       'scaling:stateless',
       'best:checklist',
+      'thirdparty:hub',
+      'arch:saga',
+      'arch:eventstore',
     ]);
   });
 });

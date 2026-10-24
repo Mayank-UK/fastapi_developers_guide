@@ -31,6 +31,7 @@ from guide.content.models import (
     Topic,
     TopicGroup,
 )
+from guide.content.topics.advanced_architecture import TOPIC as ADVANCED_ARCHITECTURE_TOPIC
 from guide.content.topics.api_design import TOPIC as API_DESIGN_TOPIC
 from guide.content.topics.api_documentation import TOPIC as API_DOCUMENTATION_TOPIC
 from guide.content.topics.architecture import TOPIC as ARCHITECTURE_TOPIC
@@ -70,6 +71,7 @@ from guide.content.topics.security import TOPIC as SECURITY_TOPIC
 from guide.content.topics.sql_schema import TOPIC as SQL_SCHEMA_TOPIC
 from guide.content.topics.sqlalchemy_orm import TOPIC as SQLALCHEMY_ORM_TOPIC
 from guide.content.topics.testing import TOPIC as TESTING_TOPIC
+from guide.content.topics.third_party import TOPIC as THIRD_PARTY_TOPIC
 from guide.content.topics.validation import TOPIC as VALIDATION_TOPIC
 from guide.content.topics.webhooks import TOPIC as WEBHOOKS_TOPIC
 
@@ -263,5 +265,7 @@ production_registry: Final[ContentRegistry] = ContentRegistry(
         RELIABILITY_TOPIC,
         SCALING_TOPIC,
         BEST_PRACTICES_TOPIC,
+        THIRD_PARTY_TOPIC,
+        ADVANCED_ARCHITECTURE_TOPIC,
     ],
 )

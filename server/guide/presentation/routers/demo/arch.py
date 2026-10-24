@@ -1,16 +1,26 @@
-"""The architecture tracer demo (topic 32, area ``arch``).
+"""The architecture demos (topic 32 + topic 43, area ``arch``).
 
-Thin router (family invariant): the handler collects the introspection
-facts from the RUNNING app — the built middleware chain walked from the
-outermost layer down to the app's own router (public surface only:
-``middleware_stack`` / ``build_middleware_stack()``, each layer's ``app``
-attribute, identity against ``app.router``), the traced endpoint's real
-dependency tree (read off the posts resource's own router — the source
-router's APIRoute objects, never the post-0.143 wrapped ``app.routes``),
-and the composition root's actual wiring (the adapter behind the posts
-port, read off ``app.state`` with the same isinstance guard the provider
-uses) — and the engine in ``guide/domain/demos/`` drives two REAL internal
-requests through the real app at the ASGI boundary and shapes the payload.
+Thin routers (family invariant): the tracer handler collects the
+introspection facts from the RUNNING app — the built middleware chain
+walked from the outermost layer down to the app's own router (public
+surface only: ``middleware_stack`` / ``build_middleware_stack()``, each
+layer's ``app`` attribute, identity against ``app.router``), the traced
+endpoint's real dependency tree (read off the posts resource's own
+router — the source router's APIRoute objects, never the post-0.143
+wrapped ``app.routes``), and the composition root's actual wiring (the
+adapter behind the posts port, read off ``app.state`` with the same
+isinstance guard the provider uses) — and the engine in
+``guide/domain/demos/`` drives two REAL internal requests through the
+real app at the ASGI boundary and shapes the payload.
+
+Topic 43 adds the two capstone demos over the REAL patterns substrate
+in ``guide/domain/patterns/``: the saga panel (``GET /saga``) runs the
+genuine ``SagaCoordinator`` twice — a committed run, then a failing
+run whose compensations unwind the completed steps in reverse — and
+the event-store panel (``GET /eventstore``) appends, folds, rebuilds,
+and refuses a stale write through the genuine ``EventStore`` port. Both
+builders are pure per-request engines: fresh scratch state every call,
+deterministic clocks, no shared process state to reset.
 """
 
 import inspect
@@ -21,6 +31,8 @@ from fastapi.routing import APIRoute
 from starlette.types import ASGIApp
 
 from guide.core.errors import AppError, FailureKind
+from guide.domain.demos.arch_eventstore import ArchEventStorePanel, build_arch_eventstore_panel
+from guide.domain.demos.arch_saga import ArchSagaPanel, build_arch_saga_panel
 from guide.domain.demos.arch_tracer import (
     ArchDependency,
     ArchRoute,
@@ -35,7 +47,13 @@ from guide.presentation.routers import posts as posts_resource
 router = APIRouter(prefix="/api/demo/arch", tags=["demo:arch"])
 
 TRACER_PATH: Final = "/tracer"
-"""The routers' path (prefix-relative) — the terminal companion names it."""
+"""The tracer's path (prefix-relative) — the terminal companion names it."""
+
+SAGA_PATH: Final = "/saga"
+"""The saga panel's path (prefix-relative) — the terminal companion names it."""
+
+EVENTSTORE_PATH: Final = "/eventstore"
+"""The event-store panel's path (prefix-relative) — the companion names it."""
 
 TRACED_TEMPLATE: Final = "/api/posts"
 """The endpoint the tracer follows through every layer (topic 11's resource)."""
@@ -120,3 +138,15 @@ async def read_arch_tracer(request: Request) -> ArchTracerPayload:
         route=_traced_route_facts(),
         wiring=_wiring_facts(app),
     )
+
+
+@router.get(SAGA_PATH, response_model=ArchSagaPanel)
+async def read_arch_saga() -> ArchSagaPanel:
+    """Serve the saga panel: a committed run, then compensations in reverse."""
+    return build_arch_saga_panel()
+
+
+@router.get(EVENTSTORE_PATH, response_model=ArchEventStorePanel)
+async def read_arch_eventstore() -> ArchEventStorePanel:
+    """Serve the event-store panel: append, fold, rebuild, the refused stale write."""
+    return build_arch_eventstore_panel()

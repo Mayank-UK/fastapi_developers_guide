@@ -244,6 +244,18 @@ import { ScalingStatelessApi } from '../data/demo/scaling-stateless-api';
 import { ScalingStatelessRepositoryImpl } from '../data/demo/scaling-stateless-repository-impl';
 import type { ScalingStatelessRepository } from '../domain/demo/scaling-stateless-repository';
 import { GetScalingStatelessDemoUseCase } from '../domain/demo/get-scaling-stateless-demo-usecase';
+import { ThirdPartyHubApi } from '../data/demo/thirdparty-hub-api';
+import { ThirdPartyHubRepositoryImpl } from '../data/demo/thirdparty-hub-repository-impl';
+import type { ThirdPartyHubRepository } from '../domain/demo/thirdparty-hub-repository';
+import { GetThirdPartyHubDemoUseCase } from '../domain/demo/get-thirdparty-hub-demo-usecase';
+import { ArchSagaApi } from '../data/demo/arch-saga-api';
+import { ArchSagaRepositoryImpl } from '../data/demo/arch-saga-repository-impl';
+import type { ArchSagaRepository } from '../domain/demo/arch-saga-repository';
+import { GetArchSagaDemoUseCase } from '../domain/demo/get-arch-saga-demo-usecase';
+import { ArchEventStoreApi } from '../data/demo/arch-eventstore-api';
+import { ArchEventStoreRepositoryImpl } from '../data/demo/arch-eventstore-repository-impl';
+import type { ArchEventStoreRepository } from '../domain/demo/arch-eventstore-repository';
+import { GetArchEventStoreDemoUseCase } from '../domain/demo/get-arch-eventstore-demo-usecase';
 
 /**
  * Service-locator container — this client's composition root, mirroring the
@@ -453,6 +465,15 @@ export const ContainerTokens = {
   ScalingStatelessApi: Symbol('ScalingStatelessApi'),
   ScalingStatelessRepository: Symbol('ScalingStatelessRepository'),
   GetScalingStatelessDemoUseCase: Symbol('GetScalingStatelessDemoUseCase'),
+  ThirdPartyHubApi: Symbol('ThirdPartyHubApi'),
+  ThirdPartyHubRepository: Symbol('ThirdPartyHubRepository'),
+  GetThirdPartyHubDemoUseCase: Symbol('GetThirdPartyHubDemoUseCase'),
+  ArchSagaApi: Symbol('ArchSagaApi'),
+  ArchSagaRepository: Symbol('ArchSagaRepository'),
+  GetArchSagaDemoUseCase: Symbol('GetArchSagaDemoUseCase'),
+  ArchEventStoreApi: Symbol('ArchEventStoreApi'),
+  ArchEventStoreRepository: Symbol('ArchEventStoreRepository'),
+  GetArchEventStoreDemoUseCase: Symbol('GetArchEventStoreDemoUseCase'),
 } as const;
 
 class Container {
@@ -1075,6 +1096,36 @@ class Container {
     this.register(
       ContainerTokens.GetScalingStatelessDemoUseCase,
       new GetScalingStatelessDemoUseCase(this.scalingStatelessRepository),
+    );
+
+    this.register(ContainerTokens.ThirdPartyHubApi, new ThirdPartyHubApi(config));
+    this.register(
+      ContainerTokens.ThirdPartyHubRepository,
+      new ThirdPartyHubRepositoryImpl(this.thirdPartyHubApi),
+    );
+    this.register(
+      ContainerTokens.GetThirdPartyHubDemoUseCase,
+      new GetThirdPartyHubDemoUseCase(this.thirdPartyHubRepository),
+    );
+
+    this.register(ContainerTokens.ArchSagaApi, new ArchSagaApi(config));
+    this.register(
+      ContainerTokens.ArchSagaRepository,
+      new ArchSagaRepositoryImpl(this.archSagaApi),
+    );
+    this.register(
+      ContainerTokens.GetArchSagaDemoUseCase,
+      new GetArchSagaDemoUseCase(this.archSagaRepository),
+    );
+
+    this.register(ContainerTokens.ArchEventStoreApi, new ArchEventStoreApi(config));
+    this.register(
+      ContainerTokens.ArchEventStoreRepository,
+      new ArchEventStoreRepositoryImpl(this.archEventStoreApi),
+    );
+    this.register(
+      ContainerTokens.GetArchEventStoreDemoUseCase,
+      new GetArchEventStoreDemoUseCase(this.archEventStoreRepository),
     );
   }
 
@@ -1734,6 +1785,52 @@ class Container {
   get getScalingStatelessDemoUseCase(): GetScalingStatelessDemoUseCase {
     return this.resolve<GetScalingStatelessDemoUseCase>(
       ContainerTokens.GetScalingStatelessDemoUseCase,
+    );
+  }
+
+  get thirdPartyHubApi(): ThirdPartyHubApi {
+    return this.resolve<ThirdPartyHubApi>(ContainerTokens.ThirdPartyHubApi);
+  }
+
+  get thirdPartyHubRepository(): ThirdPartyHubRepository {
+    return this.resolve<ThirdPartyHubRepository>(
+      ContainerTokens.ThirdPartyHubRepository,
+    );
+  }
+
+  get getThirdPartyHubDemoUseCase(): GetThirdPartyHubDemoUseCase {
+    return this.resolve<GetThirdPartyHubDemoUseCase>(
+      ContainerTokens.GetThirdPartyHubDemoUseCase,
+    );
+  }
+
+  get archSagaApi(): ArchSagaApi {
+    return this.resolve<ArchSagaApi>(ContainerTokens.ArchSagaApi);
+  }
+
+  get archSagaRepository(): ArchSagaRepository {
+    return this.resolve<ArchSagaRepository>(ContainerTokens.ArchSagaRepository);
+  }
+
+  get getArchSagaDemoUseCase(): GetArchSagaDemoUseCase {
+    return this.resolve<GetArchSagaDemoUseCase>(
+      ContainerTokens.GetArchSagaDemoUseCase,
+    );
+  }
+
+  get archEventStoreApi(): ArchEventStoreApi {
+    return this.resolve<ArchEventStoreApi>(ContainerTokens.ArchEventStoreApi);
+  }
+
+  get archEventStoreRepository(): ArchEventStoreRepository {
+    return this.resolve<ArchEventStoreRepository>(
+      ContainerTokens.ArchEventStoreRepository,
+    );
+  }
+
+  get getArchEventStoreDemoUseCase(): GetArchEventStoreDemoUseCase {
+    return this.resolve<GetArchEventStoreDemoUseCase>(
+      ContainerTokens.GetArchEventStoreDemoUseCase,
     );
   }
 

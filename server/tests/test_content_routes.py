@@ -99,6 +99,8 @@ def test_production_list_serves_the_registered_curriculum(client: TestClient) ->
         "reliability",
         "scaling",
         "best-practices",
+        "third-party",
+        "advanced-architecture",
     ]
     assert body["topics"][0]["sectionCount"] == 11
     assert body["topics"][1]["sectionCount"] == 9
@@ -141,6 +143,8 @@ def test_production_list_serves_the_registered_curriculum(client: TestClient) ->
     assert body["topics"][38]["sectionCount"] == 9
     assert body["topics"][39]["sectionCount"] == 9
     assert body["topics"][40]["sectionCount"] == 12
+    assert body["topics"][41]["sectionCount"] == 7
+    assert body["topics"][42]["sectionCount"] == 9
 
 
 def test_fixture_list_is_sorted_by_order_with_section_count(

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initAnalytics, trackEvent } from './analytics';
 
 /* Both vars non-empty = configured; every other combination must disable
@@ -89,8 +89,8 @@ describe('analytics', () => {
       initAnalytics();
 
       // Two events queue during the cold window…
-      trackEvent('topic-open', { topic: 'middleware' });
-      trackEvent('copy-code', { topic: '/topics/middleware' });
+      trackEvent('topic-open', { topic: 'dependency-injection' });
+      trackEvent('copy-code', { topic: '/topics/dependency-injection' });
 
       // …then the beacon evaluates (jsdom never runs it, so simulate
       // its load event) and its global exists.
@@ -99,10 +99,10 @@ describe('analytics', () => {
 
       expect(track).toHaveBeenCalledTimes(2);
       expect(track).toHaveBeenNthCalledWith(1, 'topic-open', {
-        topic: 'middleware',
+        topic: 'dependency-injection',
       });
       expect(track).toHaveBeenNthCalledWith(2, 'copy-code', {
-        topic: '/topics/middleware',
+        topic: '/topics/dependency-injection',
       });
     });
 
@@ -152,7 +152,11 @@ describe('analytics', () => {
       const track = installUmami();
 
       // One call per union member — also proves each payload shape
-      // compiles against its overload (no dynamic strings).
+      // compiles against its overload (no dynamic strings). The
+      // topic id is UNIQUE to this test: topic-open dedupes by
+      // topic for 30s across the whole suite (see the dedupe describe
+      // below), so a second test firing the same id would see its
+      // topic-open swallowed.
       trackEvent('topic-open', { topic: 'sql-schema' });
       trackEvent('copy-code', { topic: '/topics/sql-schema' });
 
@@ -163,6 +167,73 @@ describe('analytics', () => {
       expect(track).toHaveBeenNthCalledWith(2, 'copy-code', {
         topic: '/topics/sql-schema',
       });
+    });
+  });
+
+  describe('topic-open dedupe (remount double-fire guard)', () => {
+    // The dedupe map is module-level with no external reset (unlike the
+    // pre-load queue, which has the script's error side band), so each
+    // test isolates it by firing only topic ids no other test in this
+    // suite uses. Time is pinned to one fixed instant via a Date-only
+    // fake clock, so "quick succession" and "past the window" are exact
+    // rather than machine-speed dependent.
+    const BASE_MS = Date.parse('2026-10-24T00:00:00Z');
+
+    beforeEach(() => {
+      vi.stubEnv('VITE_UMAMI_SRC', SRC);
+      vi.stubEnv('VITE_UMAMI_ID', ID);
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(BASE_MS));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('collapses a second topic-open for the same topic inside the window', () => {
+      const track = installUmami();
+
+      trackEvent('topic-open', { topic: 'websockets' });
+      trackEvent('topic-open', { topic: 'websockets' });
+
+      expect(track).toHaveBeenCalledTimes(1);
+      expect(track).toHaveBeenNthCalledWith(1, 'topic-open', {
+        topic: 'websockets',
+      });
+    });
+
+    it('sends again for the same topic once past the 30s window', () => {
+      const track = installUmami();
+
+      trackEvent('topic-open', { topic: 'error-handling' });
+      vi.setSystemTime(new Date(BASE_MS + 30_001));
+      trackEvent('topic-open', { topic: 'error-handling' });
+
+      expect(track).toHaveBeenCalledTimes(2);
+      expect(track).toHaveBeenNthCalledWith(2, 'topic-open', {
+        topic: 'error-handling',
+      });
+    });
+
+    it('never collapses two different topics inside the window', () => {
+      const track = installUmami();
+
+      trackEvent('topic-open', { topic: 'background-tasks' });
+      trackEvent('topic-open', { topic: 'rate-limiting' });
+
+      expect(track).toHaveBeenCalledTimes(2);
+    });
+
+    it('guards topic-open only — rapid copy-code repeats both send', () => {
+      const track = installUmami();
+
+      // The dedupe map is only consulted (and only written) for
+      // topic-open, so rapid repeats of any other event name go
+      // through — the guard is name-specific, not topic-specific.
+      trackEvent('copy-code', { topic: '/topics/caching' });
+      trackEvent('copy-code', { topic: '/topics/caching' });
+
+      expect(track).toHaveBeenCalledTimes(2);
     });
   });
 });

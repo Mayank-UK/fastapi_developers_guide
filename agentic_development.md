@@ -1,6 +1,7 @@
 # AI defined section:
 
 ## Current state
+- ⏳ PARKED FOR ACTIONS-QUOTA RENEWAL (Nov 1, user freeze 2026-10-24 — quota ~95%): fdg master CI is RED at cbd161b (deploy skipped) on the SECOND stale e2e pin from the wrap-up wave — home.spec.ts pinned the deployment topic card as coming-soon but deployment is authored now. The FIX is READY but UNCOMMITTED in the working tree (e2e/home.spec.ts: planned-card spot-check repointed to `topic-card-third-party`, one of the two still-unauthored topics; NOTE dependency_management.py exists with underscores = authored — do not pin dependency-management). UNBLOCKED by user 2026-10-24 (~14:2x UTC): the e2e fix is being pushed now — one pipeline ships the wrap-up wave + the topic-open dedupe fix (3041988) together. Also unpushed locally: analytics bookkeeping commit de6a05f. Umami topic-open dedupe: module guard landed at 3041988 (496 client tests green) but NOT YET DEPLOYED.
 - App: server (Python 3.13 + FastAPI + uv, pyproject + committed uv.lock, root pkg `guide`) carries ALL teaching as a typed content API; client (React 19 + Vite + TS + Tailwind
   v4, react-guide architecture) is a presentation-only shell. Family: ../express (canon origin), ../springboot (newest patterns) — check siblings first when unsure.
 - Repo: server/ + client/ + e2e/ + deploy/k8s/ + .docker/ + .devcontainer/. Ports 8000/5174/8001, PG 5432, redis 6379, mongo 27017. Server: core/ (pydantic-settings

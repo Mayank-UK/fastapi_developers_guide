@@ -49,11 +49,15 @@ test('the home hub renders the full topic map', async ({ page }) => {
   await expect(topicMap.getByRole('link')).toHaveCount(AUTHORED_TOPIC_LINKS);
 
   // Spot checks: the first authored topic, and one planned topic rendered
-  // as an inert coming-soon card (no link, no route).
+  // as an inert coming-soon card (no link, no route). Pinned to
+  // third-party (topic 42, one of the two still-unauthored) — deployment
+  // got authored in the wrap-up wave (41/43 live) and renders as a link.
   await expect(
     topicMap.getByRole('link', { name: /The Python language/ }),
   ).toBeVisible();
-  const plannedCard = topicMap.locator('[data-testid="topic-card-deployment"]');
+  const plannedCard = topicMap.locator(
+    '[data-testid="topic-card-third-party"]',
+  );
   await expect(plannedCard).toBeVisible();
   await expect(plannedCard).toHaveAttribute('aria-disabled', 'true');
   await expect(plannedCard.getByText('coming soon', { exact: true })).toBeVisible();

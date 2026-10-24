@@ -10,11 +10,13 @@ __pycache__/
 # JS installs & build output
 node_modules/
 dist/
-# Env files stay out of git — EXCEPT the two committed non-secrets: the
-# placeholder template the deploy materializes the real file from, and the
-# single non-sensitive compose interpolation variable (IMAGE_TAG=ci).
+# Env files stay out of git — EXCEPT the committed non-secrets: the
+# placeholder template the deploy materializes the real file from, the
+# single non-sensitive compose interpolation variable (IMAGE_TAG=ci), and
+# the client build-env template (public-by-design Umami placeholders).
 .env*
 !server/.env.production.example
+!client/.env.example
 !.docker/.env
 # Test coverage (pytest / Vitest HTML reports)
 coverage/

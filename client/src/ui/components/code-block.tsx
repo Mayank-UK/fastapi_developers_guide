@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { trackEvent } from '../analytics/analytics';
 
 interface CodeBlockProps {
   code: string;
@@ -43,6 +44,10 @@ export function CodeBlock({
   const handleCopy = async (event: React.MouseEvent) => {
     event.stopPropagation();
     if (!(await copyToClipboard(code))) return;
+    // Self-hosted analytics: a copy that definitely succeeded (the route
+    // path identifies the topic page — the presenter stays reusable outside
+    // topic views). A no-op unless the build baked both VITE_UMAMI_* vars in.
+    trackEvent('copy-code', { topic: window.location.pathname });
     setCopied(true);
     if (resetTimer.current !== undefined) window.clearTimeout(resetTimer.current);
     resetTimer.current = window.setTimeout(() => setCopied(false), 1500);

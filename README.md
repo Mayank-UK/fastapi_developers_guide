@@ -25,3 +25,24 @@ docker run --rm -v "$PWD/client":/app -w /app -v fdg-npm:/root/.npm node:22-book
 ```
 
 When Docker files change: `docker compose -f .docker/docker-compose.yml config -q`, plus — after copying `server/.env.production.example` to `server/.env.production` and sourcing it (`set -a; . server/.env.production; set +a`) so the required-variable rails resolve — `docker compose -f .docker/docker-compose-platform.yml config -q` and `docker compose -f .docker/docker-compose.prod.yml -f .docker/docker-compose.ci.yml config -q`.
+
+## Analytics
+
+The site reports to a **self-hosted Umami** instance at https://umami.mayankcodeworks.com — no third-party tracker, no cookies banner needed. The beacon is env-gated: CI bakes the `VITE_UMAMI_SRC` / `VITE_UMAMI_ID` **repository Variables** (not secrets — both values are public by design, visible in the served page source anyway) into the client image as Docker build-args (see `client/src/ui/analytics/analytics.ts`). With either variable empty — the default, and always in dev/test — analytics is a complete no-op: no script is injected and nothing is sent.
+
+Custom events:
+
+| Event | Property | Trigger |
+| ----- | -------- | ------- |
+| `topic-open` | `topic` — the served topic id (e.g. `pydantic`) | a topic screen finishes loading (home-card click, direct link, or refresh) |
+| `copy-code` | `topic` — the current route path (e.g. `/topics/pydantic`) | a code block's copy button succeeds |
+
+(No `demo-run` event: demos mount inline beside their teaching sections with no single user-triggered "run" action, so there is nothing to report.)
+
+**UTM convention for share links** — tag any link you post with `utm_source` = where the link lives and `utm_medium` = `readme` \| `post` \| `social`; Umami parses the standard UTM parameters automatically:
+
+```text
+https://fastapidevelopersguide.mayankcodeworks.com/?utm_source=github&utm_medium=readme
+https://fastapidevelopersguide.mayankcodeworks.com/?utm_source=reddit&utm_medium=post
+https://fastapidevelopersguide.mayankcodeworks.com/?utm_source=dev.to&utm_medium=post
+```

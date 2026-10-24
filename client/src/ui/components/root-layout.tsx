@@ -1,7 +1,8 @@
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { ThemeToggle } from './theme-toggle';
 import { RoutePaths } from '../routing/routes';
+import { initAnalytics } from '../analytics/analytics';
 
 /**
  * RootLayout — the single shared app shell: a quiet header (guide name as a
@@ -20,6 +21,14 @@ export function RootLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const canGoBack = location.pathname !== RoutePaths.Home;
+
+  // Self-hosted analytics beacon (Umami — see ui/analytics/analytics.ts):
+  // shell-level so it loads once per document for EVERY route. A no-op
+  // unless the build baked both VITE_UMAMI_* vars in; the loader's
+  // idempotence guard absorbs StrictMode's dev double-mount.
+  useEffect(() => {
+    initAnalytics();
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col bg-surface-tint text-on-surface">

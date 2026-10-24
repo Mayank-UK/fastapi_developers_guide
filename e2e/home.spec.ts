@@ -13,9 +13,10 @@ const GROUP_TITLES = [
   'Capstones',
 ] as const;
 
-/** Authored topics registered server-side (planned topics arrive as 9 extra
- * "coming soon" cards that are NOT links). */
-const AUTHORED_TOPIC_LINKS = 34;
+/** Authored topics registered server-side (planned topics arrive as extra
+ * "coming soon" cards that are NOT links). 34 → 41 with the wrap-up wave
+ * (topics 31/33/35/37/38/39/40 authored, 41/43 live). */
+const AUTHORED_TOPIC_LINKS = 41;
 
 /**
  * Home is the guide's front door: a hero with the live health chip and the

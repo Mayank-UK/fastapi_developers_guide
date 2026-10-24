@@ -196,14 +196,30 @@ import { ErrorsExplorerApi } from '../data/demo/errors-explorer-api';
 import { ErrorsExplorerRepositoryImpl } from '../data/demo/errors-explorer-repository-impl';
 import type { ErrorsExplorerRepository } from '../domain/demo/errors-explorer-repository';
 import { GetErrorsExplorerDemoUseCase } from '../domain/demo/get-errors-explorer-demo-usecase';
+import { DepsManifestApi } from '../data/demo/dep-manifest-api';
+import { DepsManifestRepositoryImpl } from '../data/demo/dep-manifest-repository-impl';
+import type { DepsManifestRepository } from '../domain/demo/dep-manifest-repository';
+import { GetDepsManifestDemoUseCase } from '../domain/demo/get-dep-manifest-demo-usecase';
 import { ArchTracerApi } from '../data/demo/arch-tracer-api';
 import { ArchTracerRepositoryImpl } from '../data/demo/arch-tracer-repository-impl';
 import { TestingRunnerApi } from '../data/demo/testing-runner-api';
 import { TestingRunnerRepositoryImpl } from '../data/demo/testing-runner-repository-impl';
+import { ObsViewerApi } from '../data/demo/obs-viewer-api';
+import { ObsViewerRepositoryImpl } from '../data/demo/obs-viewer-repository-impl';
+import { ObsTraceApi } from '../data/demo/obs-trace-api';
+import { ObsTraceRepositoryImpl } from '../data/demo/obs-trace-repository-impl';
+import { DebugStallApi } from '../data/demo/debug-stall-api';
+import { DebugStallRepositoryImpl } from '../data/demo/debug-stall-repository-impl';
 import type { ArchTracerRepository } from '../domain/demo/arch-tracer-repository';
 import { GetArchTracerDemoUseCase } from '../domain/demo/get-arch-tracer-demo-usecase';
 import type { TestingRunnerRepository } from '../domain/demo/testing-runner-repository';
 import { GetTestingRunnerDemoUseCase } from '../domain/demo/get-testing-runner-demo-usecase';
+import type { ObsViewerRepository } from '../domain/demo/obs-viewer-repository';
+import { GetObsViewerDemoUseCase } from '../domain/demo/get-obs-viewer-demo-usecase';
+import type { ObsTraceRepository } from '../domain/demo/obs-trace-repository';
+import { GetObsTraceDemoUseCase } from '../domain/demo/get-obs-trace-demo-usecase';
+import type { DebugStallRepository } from '../domain/demo/debug-stall-repository';
+import { GetDebugStallDemoUseCase } from '../domain/demo/get-debug-stall-demo-usecase';
 import { EnvInspectorApi } from '../data/demo/env-inspector-api';
 import { EnvInspectorRepositoryImpl } from '../data/demo/env-inspector-repository-impl';
 import type { EnvInspectorRepository } from '../domain/demo/env-inspector-repository';
@@ -212,6 +228,22 @@ import { BestChecklistApi } from '../data/demo/best-checklist-api';
 import { BestChecklistRepositoryImpl } from '../data/demo/best-checklist-repository-impl';
 import type { BestChecklistRepository } from '../domain/demo/best-checklist-repository';
 import { GetBestChecklistDemoUseCase } from '../domain/demo/get-best-checklist-demo-usecase';
+import { DeployStackApi } from '../data/demo/deploy-stack-api';
+import { DeployStackRepositoryImpl } from '../data/demo/deploy-stack-repository-impl';
+import type { DeployStackRepository } from '../domain/demo/deploy-stack-repository';
+import { GetDeployStackDemoUseCase } from '../domain/demo/get-deploy-stack-demo-usecase';
+import { PerfBenchApi } from '../data/demo/perf-bench-api';
+import { PerfBenchRepositoryImpl } from '../data/demo/perf-bench-repository-impl';
+import type { PerfBenchRepository } from '../domain/demo/perf-bench-repository';
+import { GetPerfBenchDemoUseCase } from '../domain/demo/get-perf-bench-demo-usecase';
+import { ReliabilityBreakerApi } from '../data/demo/reliability-breaker-api';
+import { ReliabilityBreakerRepositoryImpl } from '../data/demo/reliability-breaker-repository-impl';
+import type { ReliabilityBreakerRepository } from '../domain/demo/reliability-breaker-repository';
+import { GetReliabilityBreakerDemoUseCase } from '../domain/demo/get-reliability-breaker-demo-usecase';
+import { ScalingStatelessApi } from '../data/demo/scaling-stateless-api';
+import { ScalingStatelessRepositoryImpl } from '../data/demo/scaling-stateless-repository-impl';
+import type { ScalingStatelessRepository } from '../domain/demo/scaling-stateless-repository';
+import { GetScalingStatelessDemoUseCase } from '../domain/demo/get-scaling-stateless-demo-usecase';
 
 /**
  * Service-locator container — this client's composition root, mirroring the
@@ -385,18 +417,42 @@ export const ContainerTokens = {
   ErrorsExplorerApi: Symbol('ErrorsExplorerApi'),
   ErrorsExplorerRepository: Symbol('ErrorsExplorerRepository'),
   GetErrorsExplorerDemoUseCase: Symbol('GetErrorsExplorerDemoUseCase'),
+  DepsManifestApi: Symbol('DepsManifestApi'),
+  DepsManifestRepository: Symbol('DepsManifestRepository'),
+  GetDepsManifestDemoUseCase: Symbol('GetDepsManifestDemoUseCase'),
   ArchTracerApi: Symbol('ArchTracerApi'),
   ArchTracerRepository: Symbol('ArchTracerRepository'),
   GetArchTracerDemoUseCase: Symbol('GetArchTracerDemoUseCase'),
+  ObsViewerApi: Symbol('ObsViewerApi'),
+  ObsViewerRepository: Symbol('ObsViewerRepository'),
+  GetObsViewerDemoUseCase: Symbol('GetObsViewerDemoUseCase'),
+  ObsTraceApi: Symbol('ObsTraceApi'),
+  ObsTraceRepository: Symbol('ObsTraceRepository'),
+  GetObsTraceDemoUseCase: Symbol('GetObsTraceDemoUseCase'),
   TestingRunnerApi: Symbol('TestingRunnerApi'),
   TestingRunnerRepository: Symbol('TestingRunnerRepository'),
   GetTestingRunnerDemoUseCase: Symbol('GetTestingRunnerDemoUseCase'),
+  DebugStallApi: Symbol('DebugStallApi'),
+  DebugStallRepository: Symbol('DebugStallRepository'),
+  GetDebugStallDemoUseCase: Symbol('GetDebugStallDemoUseCase'),
   EnvInspectorApi: Symbol('EnvInspectorApi'),
   EnvInspectorRepository: Symbol('EnvInspectorRepository'),
   GetEnvInspectorDemoUseCase: Symbol('GetEnvInspectorDemoUseCase'),
+  DeployStackApi: Symbol('DeployStackApi'),
+  DeployStackRepository: Symbol('DeployStackRepository'),
+  GetDeployStackDemoUseCase: Symbol('GetDeployStackDemoUseCase'),
+  PerfBenchApi: Symbol('PerfBenchApi'),
+  PerfBenchRepository: Symbol('PerfBenchRepository'),
+  GetPerfBenchDemoUseCase: Symbol('GetPerfBenchDemoUseCase'),
+  ReliabilityBreakerApi: Symbol('ReliabilityBreakerApi'),
+  ReliabilityBreakerRepository: Symbol('ReliabilityBreakerRepository'),
+  GetReliabilityBreakerDemoUseCase: Symbol('GetReliabilityBreakerDemoUseCase'),
   BestChecklistApi: Symbol('BestChecklistApi'),
   BestChecklistRepository: Symbol('BestChecklistRepository'),
   GetBestChecklistDemoUseCase: Symbol('GetBestChecklistDemoUseCase'),
+  ScalingStatelessApi: Symbol('ScalingStatelessApi'),
+  ScalingStatelessRepository: Symbol('ScalingStatelessRepository'),
+  GetScalingStatelessDemoUseCase: Symbol('GetScalingStatelessDemoUseCase'),
 } as const;
 
 class Container {
@@ -901,6 +957,16 @@ class Container {
       new GetErrorsExplorerDemoUseCase(this.errorsExplorerRepository),
     );
 
+    this.register(ContainerTokens.DepsManifestApi, new DepsManifestApi(config));
+    this.register(
+      ContainerTokens.DepsManifestRepository,
+      new DepsManifestRepositoryImpl(this.depsManifestApi),
+    );
+    this.register(
+      ContainerTokens.GetDepsManifestDemoUseCase,
+      new GetDepsManifestDemoUseCase(this.depsManifestRepository),
+    );
+
     this.register(ContainerTokens.ArchTracerApi, new ArchTracerApi(config));
     this.register(
       ContainerTokens.ArchTracerRepository,
@@ -909,6 +975,26 @@ class Container {
     this.register(
       ContainerTokens.GetArchTracerDemoUseCase,
       new GetArchTracerDemoUseCase(this.archTracerRepository),
+    );
+
+    this.register(ContainerTokens.ObsViewerApi, new ObsViewerApi(config));
+    this.register(
+      ContainerTokens.ObsViewerRepository,
+      new ObsViewerRepositoryImpl(this.obsViewerApi),
+    );
+    this.register(
+      ContainerTokens.GetObsViewerDemoUseCase,
+      new GetObsViewerDemoUseCase(this.obsViewerRepository),
+    );
+
+    this.register(ContainerTokens.ObsTraceApi, new ObsTraceApi(config));
+    this.register(
+      ContainerTokens.ObsTraceRepository,
+      new ObsTraceRepositoryImpl(this.obsTraceApi),
+    );
+    this.register(
+      ContainerTokens.GetObsTraceDemoUseCase,
+      new GetObsTraceDemoUseCase(this.obsTraceRepository),
     );
 
     this.register(ContainerTokens.TestingRunnerApi, new TestingRunnerApi(config));
@@ -921,6 +1007,16 @@ class Container {
       new GetTestingRunnerDemoUseCase(this.testingRunnerRepository),
     );
 
+    this.register(ContainerTokens.DebugStallApi, new DebugStallApi(config));
+    this.register(
+      ContainerTokens.DebugStallRepository,
+      new DebugStallRepositoryImpl(this.debugStallApi),
+    );
+    this.register(
+      ContainerTokens.GetDebugStallDemoUseCase,
+      new GetDebugStallDemoUseCase(this.debugStallRepository),
+    );
+
     this.register(ContainerTokens.EnvInspectorApi, new EnvInspectorApi(config));
     this.register(
       ContainerTokens.EnvInspectorRepository,
@@ -931,6 +1027,36 @@ class Container {
       new GetEnvInspectorDemoUseCase(this.envInspectorRepository),
     );
 
+    this.register(ContainerTokens.DeployStackApi, new DeployStackApi(config));
+    this.register(
+      ContainerTokens.DeployStackRepository,
+      new DeployStackRepositoryImpl(this.deployStackApi),
+    );
+    this.register(
+      ContainerTokens.GetDeployStackDemoUseCase,
+      new GetDeployStackDemoUseCase(this.deployStackRepository),
+    );
+
+    this.register(ContainerTokens.PerfBenchApi, new PerfBenchApi(config));
+    this.register(
+      ContainerTokens.PerfBenchRepository,
+      new PerfBenchRepositoryImpl(this.perfBenchApi),
+    );
+    this.register(
+      ContainerTokens.GetPerfBenchDemoUseCase,
+      new GetPerfBenchDemoUseCase(this.perfBenchRepository),
+    );
+
+    this.register(ContainerTokens.ReliabilityBreakerApi, new ReliabilityBreakerApi(config));
+    this.register(
+      ContainerTokens.ReliabilityBreakerRepository,
+      new ReliabilityBreakerRepositoryImpl(this.reliabilityBreakerApi),
+    );
+    this.register(
+      ContainerTokens.GetReliabilityBreakerDemoUseCase,
+      new GetReliabilityBreakerDemoUseCase(this.reliabilityBreakerRepository),
+    );
+
     this.register(ContainerTokens.BestChecklistApi, new BestChecklistApi(config));
     this.register(
       ContainerTokens.BestChecklistRepository,
@@ -939,6 +1065,16 @@ class Container {
     this.register(
       ContainerTokens.GetBestChecklistDemoUseCase,
       new GetBestChecklistDemoUseCase(this.bestChecklistRepository),
+    );
+
+    this.register(ContainerTokens.ScalingStatelessApi, new ScalingStatelessApi(config));
+    this.register(
+      ContainerTokens.ScalingStatelessRepository,
+      new ScalingStatelessRepositoryImpl(this.scalingStatelessApi),
+    );
+    this.register(
+      ContainerTokens.GetScalingStatelessDemoUseCase,
+      new GetScalingStatelessDemoUseCase(this.scalingStatelessRepository),
     );
   }
 
@@ -1435,6 +1571,20 @@ class Container {
     );
   }
 
+  get depsManifestApi(): DepsManifestApi {
+    return this.resolve<DepsManifestApi>(ContainerTokens.DepsManifestApi);
+  }
+
+  get depsManifestRepository(): DepsManifestRepository {
+    return this.resolve<DepsManifestRepository>(ContainerTokens.DepsManifestRepository);
+  }
+
+  get getDepsManifestDemoUseCase(): GetDepsManifestDemoUseCase {
+    return this.resolve<GetDepsManifestDemoUseCase>(
+      ContainerTokens.GetDepsManifestDemoUseCase,
+    );
+  }
+
   get archTracerApi(): ArchTracerApi {
     return this.resolve<ArchTracerApi>(ContainerTokens.ArchTracerApi);
   }
@@ -1445,6 +1595,30 @@ class Container {
 
   get getArchTracerDemoUseCase(): GetArchTracerDemoUseCase {
     return this.resolve<GetArchTracerDemoUseCase>(ContainerTokens.GetArchTracerDemoUseCase);
+  }
+
+  get obsViewerApi(): ObsViewerApi {
+    return this.resolve<ObsViewerApi>(ContainerTokens.ObsViewerApi);
+  }
+
+  get obsViewerRepository(): ObsViewerRepository {
+    return this.resolve<ObsViewerRepository>(ContainerTokens.ObsViewerRepository);
+  }
+
+  get getObsViewerDemoUseCase(): GetObsViewerDemoUseCase {
+    return this.resolve<GetObsViewerDemoUseCase>(ContainerTokens.GetObsViewerDemoUseCase);
+  }
+
+  get obsTraceApi(): ObsTraceApi {
+    return this.resolve<ObsTraceApi>(ContainerTokens.ObsTraceApi);
+  }
+
+  get obsTraceRepository(): ObsTraceRepository {
+    return this.resolve<ObsTraceRepository>(ContainerTokens.ObsTraceRepository);
+  }
+
+  get getObsTraceDemoUseCase(): GetObsTraceDemoUseCase {
+    return this.resolve<GetObsTraceDemoUseCase>(ContainerTokens.GetObsTraceDemoUseCase);
   }
 
   get testingRunnerApi(): TestingRunnerApi {
@@ -1458,6 +1632,20 @@ class Container {
   get getTestingRunnerDemoUseCase(): GetTestingRunnerDemoUseCase {
     return this.resolve<GetTestingRunnerDemoUseCase>(
       ContainerTokens.GetTestingRunnerDemoUseCase,
+    );
+  }
+
+  get debugStallApi(): DebugStallApi {
+    return this.resolve<DebugStallApi>(ContainerTokens.DebugStallApi);
+  }
+
+  get debugStallRepository(): DebugStallRepository {
+    return this.resolve<DebugStallRepository>(ContainerTokens.DebugStallRepository);
+  }
+
+  get getDebugStallDemoUseCase(): GetDebugStallDemoUseCase {
+    return this.resolve<GetDebugStallDemoUseCase>(
+      ContainerTokens.GetDebugStallDemoUseCase,
     );
   }
 
@@ -1475,6 +1663,50 @@ class Container {
     );
   }
 
+  get deployStackApi(): DeployStackApi {
+    return this.resolve<DeployStackApi>(ContainerTokens.DeployStackApi);
+  }
+
+  get deployStackRepository(): DeployStackRepository {
+    return this.resolve<DeployStackRepository>(ContainerTokens.DeployStackRepository);
+  }
+
+  get getDeployStackDemoUseCase(): GetDeployStackDemoUseCase {
+    return this.resolve<GetDeployStackDemoUseCase>(
+      ContainerTokens.GetDeployStackDemoUseCase,
+    );
+  }
+
+  get perfBenchApi(): PerfBenchApi {
+    return this.resolve<PerfBenchApi>(ContainerTokens.PerfBenchApi);
+  }
+
+  get perfBenchRepository(): PerfBenchRepository {
+    return this.resolve<PerfBenchRepository>(ContainerTokens.PerfBenchRepository);
+  }
+
+  get getPerfBenchDemoUseCase(): GetPerfBenchDemoUseCase {
+    return this.resolve<GetPerfBenchDemoUseCase>(
+      ContainerTokens.GetPerfBenchDemoUseCase,
+    );
+  }
+
+  get reliabilityBreakerApi(): ReliabilityBreakerApi {
+    return this.resolve<ReliabilityBreakerApi>(ContainerTokens.ReliabilityBreakerApi);
+  }
+
+  get reliabilityBreakerRepository(): ReliabilityBreakerRepository {
+    return this.resolve<ReliabilityBreakerRepository>(
+      ContainerTokens.ReliabilityBreakerRepository,
+    );
+  }
+
+  get getReliabilityBreakerDemoUseCase(): GetReliabilityBreakerDemoUseCase {
+    return this.resolve<GetReliabilityBreakerDemoUseCase>(
+      ContainerTokens.GetReliabilityBreakerDemoUseCase,
+    );
+  }
+
   get bestChecklistApi(): BestChecklistApi {
     return this.resolve<BestChecklistApi>(ContainerTokens.BestChecklistApi);
   }
@@ -1486,6 +1718,22 @@ class Container {
   get getBestChecklistDemoUseCase(): GetBestChecklistDemoUseCase {
     return this.resolve<GetBestChecklistDemoUseCase>(
       ContainerTokens.GetBestChecklistDemoUseCase,
+    );
+  }
+
+  get scalingStatelessApi(): ScalingStatelessApi {
+    return this.resolve<ScalingStatelessApi>(ContainerTokens.ScalingStatelessApi);
+  }
+
+  get scalingStatelessRepository(): ScalingStatelessRepository {
+    return this.resolve<ScalingStatelessRepository>(
+      ContainerTokens.ScalingStatelessRepository,
+    );
+  }
+
+  get getScalingStatelessDemoUseCase(): GetScalingStatelessDemoUseCase {
+    return this.resolve<GetScalingStatelessDemoUseCase>(
+      ContainerTokens.GetScalingStatelessDemoUseCase,
     );
   }
 

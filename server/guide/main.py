@@ -131,6 +131,7 @@ from guide.data.messaging import PgOutboxStore, RedisStreams
 from guide.data.mongo import MongoConsoleRepository, create_mongo_client
 from guide.data.posts.in_memory import InMemoryPostRepository
 from guide.data.redis import RedisPlaygroundRepository, create_redis_client
+from guide.data.scaling import RedisSharedCounter
 from guide.domain.auth.api_key_service import ApiKeyService
 from guide.domain.auth.jwt_service import TokenService
 from guide.domain.auth.oauth_service import OAuthProviderService
@@ -170,6 +171,7 @@ from guide.domain.security.cors import (
 from guide.domain.security.rate_limit import DEMO_POLICY, SlidingWindowLimiter
 from guide.domain.security.records import CustomerRecordStore
 from guide.presentation.dependencies.request_span import SpanLog
+from guide.presentation.middleware.request_log import RequestLogMiddleware
 from guide.presentation.middleware.security_headers import SecurityHeadersMiddleware
 from guide.presentation.routers import content, graphql, health, posts, realtime
 from guide.presentation.routers.demo import api as demo_api
@@ -179,7 +181,10 @@ from guide.presentation.routers.demo import authz as demo_authz
 from guide.presentation.routers.demo import best as demo_best
 from guide.presentation.routers.demo import caching as demo_caching
 from guide.presentation.routers.demo import db as demo_db
+from guide.presentation.routers.demo import debug as demo_debug
 from guide.presentation.routers.demo import dep as demo_dep
+from guide.presentation.routers.demo import deploy as demo_deploy
+from guide.presentation.routers.demo import deps as demo_deps
 from guide.presentation.routers.demo import env as demo_env
 from guide.presentation.routers.demo import errors as demo_errors
 from guide.presentation.routers.demo import fastapi as demo_fastapi
@@ -189,13 +194,17 @@ from guide.presentation.routers.demo import i18n as demo_i18n
 from guide.presentation.routers.demo import jobs as demo_jobs
 from guide.presentation.routers.demo import middleware as demo_middleware
 from guide.presentation.routers.demo import msg as demo_msg
+from guide.presentation.routers.demo import obs as demo_obs
+from guide.presentation.routers.demo import perf as demo_perf
 from guide.presentation.routers.demo import py as demo_py
 from guide.presentation.routers.demo import pyd as demo_pyd
 from guide.presentation.routers.demo import realtime as demo_realtime
 from guide.presentation.routers.demo import redis as demo_redis
+from guide.presentation.routers.demo import reliability as demo_reliability
 from guide.presentation.routers.demo import reqres as demo_reqres
 from guide.presentation.routers.demo import routing as demo_routing
 from guide.presentation.routers.demo import runtime as demo_runtime
+from guide.presentation.routers.demo import scaling as demo_scaling
 from guide.presentation.routers.demo import scenario as demo_scenario
 from guide.presentation.routers.demo import security as demo_security
 from guide.presentation.routers.demo import testing as demo_testing
@@ -294,6 +303,13 @@ def create_app() -> FastAPI:
     app.state.redis_client = redis_client
     app.state.redis_playground = RedisPlaygroundRepository(redis_client)
 
+    # Topic 40's shared counter: the same redis client behind the smallest
+    # port that can prove where state lives — two "replicas" increment ONE
+    # key, and the second answer contains the first's write because the
+    # value lives in the store, not in either process. Unreachable Redis
+    # degrades only the scaling demo (service_unavailable envelope).
+    app.state.shared_counter = RedisSharedCounter(redis_client)
+
     # Topic 21's cache-aside lab over the SAME posts use cases /api/posts
     # serves: the domain service owns keys, TTL, single-flight, and
     # telemetry; the store adapter owns every redis-py import over the
@@ -390,6 +406,10 @@ def create_app() -> FastAPI:
     # The CORS policy is topic 25's explicit origin allow-list; credentials
     # ride beside it, never beside a wildcard (the classic misconfig).
     app.add_middleware(RequestIdMiddleware)
+    # Topic 33's access-log layer wraps the request-id layer: it reads the
+    # id RequestIdMiddleware stamps on the response and logs one structured
+    # http_request event per request — the whole onion timed end to end.
+    app.add_middleware(RequestLogMiddleware)
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(
         CORSMiddleware,
@@ -440,19 +460,59 @@ def create_app() -> FastAPI:
     # is the scenario store's first live failure-injection reader — the
     # one endpoint whose FAILURE is the feature.
     app.include_router(demo_errors.router)
+    # Topic 31's deps manifest: the REAL pyproject.toml + uv.lock parsed at
+    # request time — groups, locked pins vs manifest ranges, drift, and the
+    # direct-vs-transitive tree the uv tree/audit section teaches.
+    app.include_router(demo_deps.router)
     # Topic 32's architecture tracer: introspects the running app and
     # drives two REAL internal requests through it — the layers and the
     # wiring made visible in one payload.
     app.include_router(demo_arch.router)
+    # Topic 33's observability demos: the structured-log viewer (the real
+    # structlog pipeline introspected + the process's recent-event ring)
+    # and the trace fan-out (three REAL internal rounds correlated by
+    # request id across header, envelope, and log row).
+    app.include_router(demo_obs.router)
     # Topic 34's testing runner: executes curated slices of the repo's own
     # test suite in a subprocess (off the loop, hard timeout, recursion
     # guard) — the suite that guards this app becomes a live exhibit.
     app.include_router(demo_testing.router)
+    # Topic 35's stall diagnosis: four bounded phases (an async await, a
+    # threadpool-contained block, an on-loop block, a baseline) each with
+    # real instruments — elapsed, loop-lag probe, a concurrent REAL
+    # /api/health, a tracemalloc window, and this request's correlated
+    # log rows. The profiling evidence py-spy would sample from outside,
+    # measured from inside, without wedging the shared loop.
+    app.include_router(demo_debug.router)
     # Topic 36's env inspector: one live read of the REAL AppConfig — every
     # setting with its true source (env or default), secrets redacted
     # server-side before the payload exists, plus the scenario store's flag
     # snapshot beside it.
     app.include_router(demo_env.router)
+    # Topic 37's deploy stack: inspects the repo's REAL deploy surface —
+    # the compose trio's services and rails, the Dockerfiles' stages, the
+    # CI/deploy workflows' gates, the env template — plus the runtime
+    # facts this process always has (env, command line, a REAL internal
+    # /api/health). Repo-root checks degrade to honest manual rows on the
+    # live server container, whose bind mount is server/ only.
+    app.include_router(demo_deploy.router)
+    # Topic 38's performance bench: every row measured on the request —
+    # real gzip over the bytes this API actually serves, the on-loop vs
+    # threadpool hygiene comparison with live probes, uvicorn's
+    # auto-selected loop/parser introspected, the engine pool's counters,
+    # and the stdlib GC read plus one off-loop measured collection.
+    app.include_router(demo_perf.router)
+    # Topic 39's circuit breaker: one GET walking the real pure substrate
+    # (domain/reliability/breaker.py) through a full cycle per request —
+    # closed → open → half-open → closed, every verdict and latency real,
+    # the open timeout elapsing on an injected clock.
+    app.include_router(demo_reliability.router)
+    # Topic 40's statelessness panel: the state-placement lesson by
+    # introspection — the router snapshots the composition root's real
+    # in-process facts, and the builder walks one logical request through
+    # two per-replica state worlds: a process-local write that never
+    # crosses, beside a real redis INCR that does.
+    app.include_router(demo_scaling.router)
     # Topic 41's best-practices checklist: a live self-audit — real probes
     # through this very app, real repo reads, honest manual verdicts where
     # no automation can judge.

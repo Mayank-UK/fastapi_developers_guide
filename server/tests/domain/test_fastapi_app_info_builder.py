@@ -118,6 +118,7 @@ def test_real_app_facts_include_health_demo_and_scenario_routes() -> None:
     assert payload.middleware == [
         "CORSMiddleware",
         "SecurityHeadersMiddleware",
+        "RequestLogMiddleware",
         "RequestIdMiddleware",
     ]
     handler_names = {h.exception for h in payload.exception_handlers}

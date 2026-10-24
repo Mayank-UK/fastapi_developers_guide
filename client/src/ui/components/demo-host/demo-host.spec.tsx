@@ -103,9 +103,17 @@ describe('DemoHost', () => {
       'realtime:chat',
       'jobs:console',
       'errors:explorer',
+      'deps:manifest',
       'arch:tracer',
+      'obs:viewer',
+      'obs:trace',
       'testing:runner',
+      'debug:stall',
       'env:inspector',
+      'deploy:stack',
+      'perf:bench',
+      'reliability:breaker',
+      'scaling:stateless',
       'best:checklist',
     ]);
   });

@@ -40,6 +40,9 @@ from guide.content.topics.background_jobs import TOPIC as BACKGROUND_JOBS_TOPIC
 from guide.content.topics.best_practices import TOPIC as BEST_PRACTICES_TOPIC
 from guide.content.topics.caching import TOPIC as CACHING_TOPIC
 from guide.content.topics.databases_sql import TOPIC as DATABASES_SQL_TOPIC
+from guide.content.topics.debugging import TOPIC as DEBUGGING_TOPIC
+from guide.content.topics.dependency_management import TOPIC as DEPENDENCY_MANAGEMENT_TOPIC
+from guide.content.topics.deployment import TOPIC as DEPLOYMENT_TOPIC
 from guide.content.topics.environments import TOPIC as ENVIRONMENTS_TOPIC
 from guide.content.topics.exception_handling import TOPIC as EXCEPTION_HANDLING_TOPIC
 from guide.content.topics.fastapi_dependencies import TOPIC as FASTAPI_DEPENDENCIES_TOPIC
@@ -52,13 +55,17 @@ from guide.content.topics.internationalization import TOPIC as INTERNATIONALIZAT
 from guide.content.topics.messaging import TOPIC as MESSAGING_TOPIC
 from guide.content.topics.middleware import TOPIC as MIDDLEWARE_TOPIC
 from guide.content.topics.mongodb import TOPIC as MONGODB_TOPIC
+from guide.content.topics.observability import TOPIC as OBSERVABILITY_TOPIC
+from guide.content.topics.performance import TOPIC as PERFORMANCE_TOPIC
 from guide.content.topics.pydantic import TOPIC as PYDANTIC_TOPIC
 from guide.content.topics.python_language import TOPIC as PYTHON_LANGUAGE_TOPIC
 from guide.content.topics.python_runtime import TOPIC as PYTHON_RUNTIME_TOPIC
 from guide.content.topics.realtime import TOPIC as REALTIME_TOPIC
 from guide.content.topics.redis import TOPIC as REDIS_TOPIC
+from guide.content.topics.reliability import TOPIC as RELIABILITY_TOPIC
 from guide.content.topics.request_response import TOPIC as REQUEST_RESPONSE_TOPIC
 from guide.content.topics.routing import TOPIC as ROUTING_TOPIC
+from guide.content.topics.scaling import TOPIC as SCALING_TOPIC
 from guide.content.topics.security import TOPIC as SECURITY_TOPIC
 from guide.content.topics.sql_schema import TOPIC as SQL_SCHEMA_TOPIC
 from guide.content.topics.sqlalchemy_orm import TOPIC as SQLALCHEMY_ORM_TOPIC
@@ -211,6 +218,7 @@ production_registry: Final[ContentRegistry] = ContentRegistry(
         TopicGroup(id="state-auth", title="State & auth", order=6),
         TopicGroup(id="media-realtime", title="Media & realtime", order=7),
         TopicGroup(id="platform", title="Platform", order=8),
+        TopicGroup(id="ship", title="Ship", order=9),
         TopicGroup(id="capstones", title="Capstones", order=10),
     ],
     topics=[
@@ -244,9 +252,16 @@ production_registry: Final[ContentRegistry] = ContentRegistry(
         REALTIME_TOPIC,
         BACKGROUND_JOBS_TOPIC,
         EXCEPTION_HANDLING_TOPIC,
+        DEPENDENCY_MANAGEMENT_TOPIC,
         ARCHITECTURE_TOPIC,
+        OBSERVABILITY_TOPIC,
         TESTING_TOPIC,
+        DEBUGGING_TOPIC,
         ENVIRONMENTS_TOPIC,
+        DEPLOYMENT_TOPIC,
+        PERFORMANCE_TOPIC,
+        RELIABILITY_TOPIC,
+        SCALING_TOPIC,
         BEST_PRACTICES_TOPIC,
     ],
 )

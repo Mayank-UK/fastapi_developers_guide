@@ -51,6 +51,7 @@ def test_topic_joins_the_request_handling_group() -> None:
         "state-auth",
         "media-realtime",
         "platform",
+        "ship",
         "capstones",
     ]
     summary = next(s for s in production_registry.summaries() if s.id == TOPIC_ID)

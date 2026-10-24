@@ -906,21 +906,20 @@ TOPIC = Topic(
                     kind="text",
                     id="rid-future-read",
                     text=(
-                        "What does NOT exist yet is the per-request access-log "
-                        "layer — the middleware that records method, path, status, "
-                        "duration, and the request id once per request. It arrives "
-                        "with observability (topic 33), where the request-id "
-                        "contextvar becomes a bound log field and the layer's "
-                        "dispatch times the whole onion with a perf_counter pair "
-                        "around call_next. The shape is already fixed by this "
-                        "topic's patterns: a BaseHTTPMiddleware (or pure ASGI once "
-                        "streaming matters) that reads the ambient id, wraps "
-                        "call_next, and logs exactly once on the way out — never "
-                        "per-route, never swallowing the failure it reports. When "
-                        "you write one, you will be recombining section 2's "
-                        "dispatch skeleton with this section's id discipline; "
-                        "nothing new is required, which is the sign the primitives "
-                        "were right."
+                        "The per-request access-log layer — the middleware that "
+                        "records method, path, status, duration, and the request "
+                        "id once per request — arrived with observability (topic "
+                        "33): the request-id contextvar became a bound log field "
+                        "(merged into every event), and the layer times the whole "
+                        "onion with a perf_counter pair around the inner call, "
+                        "built as pure ASGI because streaming mattered. The shape "
+                        "was already fixed by this topic's patterns: a middleware "
+                        "that reads the ambient id, wraps the inner app, and logs "
+                        "exactly once on the way out — never per-route, never "
+                        "swallowing the failure it reports. When you write one, "
+                        "you are recombining section 2's dispatch skeleton with "
+                        "this section's id discipline; nothing new is required, "
+                        "which is the sign the primitives were right."
                     ),
                 ),
             ],

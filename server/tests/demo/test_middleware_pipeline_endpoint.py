@@ -18,13 +18,15 @@ EXPECTED_STACK = [
     "ExceptionTelemetryMiddleware",
     "CORSMiddleware",
     "SecurityHeadersMiddleware",
+    "RequestLogMiddleware",
     "RequestIdMiddleware",
     "ExceptionMiddleware",
     "AsyncExitStackMiddleware",
     "APIRouter",
 ]
 """The built chain, outermost first — grown with topic 25's security pair
-(CORS outermost so its verdict rides even error envelopes)."""
+(CORS outermost so its verdict rides even error envelopes) and topic 33's
+access-log layer (wrapping the request-id layer it reads ids from)."""
 
 
 def test_serves_the_live_stack_in_request_order(client: TestClient) -> None:

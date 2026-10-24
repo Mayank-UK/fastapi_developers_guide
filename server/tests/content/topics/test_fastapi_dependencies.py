@@ -52,6 +52,7 @@ def test_topic_is_registered_in_framework_group() -> None:
         "state-auth",
         "media-realtime",
         "platform",
+        "ship",
         "capstones",
     ]
     summary = next(s for s in production_registry.summaries() if s.id == TOPIC_ID)

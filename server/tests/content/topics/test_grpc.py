@@ -51,6 +51,7 @@ def test_topic_joins_the_apis_group_as_fifth() -> None:
         "state-auth",
         "media-realtime",
         "platform",
+        "ship",
         "capstones",
     ]
     summary = next(s for s in production_registry.summaries() if s.id == TOPIC_ID)

@@ -72,6 +72,9 @@ _LAYER_ROLES: Final[dict[str, str]] = {
     "RequestIdMiddleware": (
         "the request-id layer — assigns the id request-side, stamps the header response-side"
     ),
+    "RequestLogMiddleware": (
+        "the access-log layer (topic 33) — one structured http_request event per request"
+    ),
     "ExceptionMiddleware": ("the innermost bookend — dispatches the registered exception handlers"),
     "AsyncExitStackMiddleware": (
         "FastAPI's request-scoped exit stack — yield-dependency teardown runs here"

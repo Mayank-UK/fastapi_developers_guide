@@ -83,9 +83,17 @@ const RealtimeTickerDemo = lazy(() => import('./realtime/ticker_demo'));
 const RealtimeChatDemo = lazy(() => import('./realtime/chat_demo'));
 const JobsConsoleDemo = lazy(() => import('./jobs/console_demo'));
 const ErrorsExplorerDemo = lazy(() => import('./errors/explorer_demo'));
+const DepsManifestDemo = lazy(() => import('./deps/manifest_demo'));
 const ArchTracerDemo = lazy(() => import('./arch/tracer_demo'));
+const ObsViewerDemo = lazy(() => import('./obs/viewer_demo'));
+const ObsTraceDemo = lazy(() => import('./obs/trace_demo'));
 const TestingRunnerDemo = lazy(() => import('./testing/runner_demo'));
+const DebugStallDemo = lazy(() => import('./debug/stall_demo'));
 const EnvInspectorDemo = lazy(() => import('./env/inspector_demo'));
+const DeployStackDemo = lazy(() => import('./deploy/stack_demo'));
+const PerfBenchDemo = lazy(() => import('./perf/bench_demo'));
+const ReliabilityBreakerDemo = lazy(() => import('./reliability/breaker_demo'));
+const ScalingStatelessDemo = lazy(() => import('./scaling/stateless_demo'));
 const BestChecklistDemo = lazy(() => import('./best/checklist_demo'));
 
 export const demoRegistry: DemoRegistry = {
@@ -136,8 +144,16 @@ export const demoRegistry: DemoRegistry = {
   'realtime:chat': RealtimeChatDemo,
   'jobs:console': JobsConsoleDemo,
   'errors:explorer': ErrorsExplorerDemo,
+  'deps:manifest': DepsManifestDemo,
   'arch:tracer': ArchTracerDemo,
+  'obs:viewer': ObsViewerDemo,
+  'obs:trace': ObsTraceDemo,
   'testing:runner': TestingRunnerDemo,
+  'debug:stall': DebugStallDemo,
   'env:inspector': EnvInspectorDemo,
+  'deploy:stack': DeployStackDemo,
+  'perf:bench': PerfBenchDemo,
+  'reliability:breaker': ReliabilityBreakerDemo,
+  'scaling:stateless': ScalingStatelessDemo,
   'best:checklist': BestChecklistDemo,
 };

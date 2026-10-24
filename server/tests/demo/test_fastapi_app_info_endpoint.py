@@ -52,6 +52,7 @@ def test_reports_the_registered_middleware_and_handler_kinds(client: TestClient)
     assert body["middleware"] == [
         "CORSMiddleware",
         "SecurityHeadersMiddleware",
+        "RequestLogMiddleware",
         "RequestIdMiddleware",
     ]
     handlers = {entry["exception"]: entry["handler"] for entry in body["exceptionHandlers"]}

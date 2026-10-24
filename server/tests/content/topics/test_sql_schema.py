@@ -52,6 +52,7 @@ def test_topic_opens_the_data_group_as_sixteenth() -> None:
         "state-auth",
         "media-realtime",
         "platform",
+        "ship",
         "capstones",
     ]
     summary = next(s for s in production_registry.summaries() if s.id == TOPIC_ID)

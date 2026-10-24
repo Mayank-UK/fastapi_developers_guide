@@ -55,6 +55,7 @@ def test_topic_opens_the_capstones_group_as_forty_first() -> None:
         "state-auth",
         "media-realtime",
         "platform",
+        "ship",
         "capstones",
     ]
     summary = next(s for s in production_registry.summaries() if s.id == TOPIC_ID)

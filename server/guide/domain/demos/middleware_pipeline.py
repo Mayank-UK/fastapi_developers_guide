@@ -53,6 +53,10 @@ _LAYER_ROLES: Final[dict[str, str]] = {
         "this app's request-id layer — assigns the id request-side, stamps "
         "the response header response-side"
     ),
+    "RequestLogMiddleware": (
+        "this app's access-log layer (topic 33) — one structured http_request "
+        "event per request, the whole onion timed end to end"
+    ),
     "ExceptionMiddleware": (
         "Starlette's innermost bookend — runs the registered exception handlers"
     ),

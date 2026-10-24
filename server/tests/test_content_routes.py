@@ -54,6 +54,7 @@ def test_production_list_serves_the_registered_curriculum(client: TestClient) ->
         "state-auth",
         "media-realtime",
         "platform",
+        "ship",
         "capstones",
     ]
     assert [topic["id"] for topic in body["topics"]] == [
@@ -87,9 +88,16 @@ def test_production_list_serves_the_registered_curriculum(client: TestClient) ->
         "realtime",
         "background-jobs",
         "exception-handling",
+        "dependency-management",
         "architecture",
+        "observability",
         "testing",
+        "debugging",
         "environments",
+        "deployment",
+        "performance",
+        "reliability",
+        "scaling",
         "best-practices",
     ]
     assert body["topics"][0]["sectionCount"] == 11
@@ -122,10 +130,17 @@ def test_production_list_serves_the_registered_curriculum(client: TestClient) ->
     assert body["topics"][27]["sectionCount"] == 7
     assert body["topics"][28]["sectionCount"] == 9
     assert body["topics"][29]["sectionCount"] == 9
-    assert body["topics"][30]["sectionCount"] == 9
-    assert body["topics"][31]["sectionCount"] == 10
-    assert body["topics"][32]["sectionCount"] == 7
-    assert body["topics"][33]["sectionCount"] == 12
+    assert body["topics"][30]["sectionCount"] == 7
+    assert body["topics"][31]["sectionCount"] == 9
+    assert body["topics"][32]["sectionCount"] == 10
+    assert body["topics"][33]["sectionCount"] == 10
+    assert body["topics"][34]["sectionCount"] == 8
+    assert body["topics"][35]["sectionCount"] == 7
+    assert body["topics"][36]["sectionCount"] == 12
+    assert body["topics"][37]["sectionCount"] == 8
+    assert body["topics"][38]["sectionCount"] == 9
+    assert body["topics"][39]["sectionCount"] == 9
+    assert body["topics"][40]["sectionCount"] == 12
 
 
 def test_fixture_list_is_sorted_by_order_with_section_count(

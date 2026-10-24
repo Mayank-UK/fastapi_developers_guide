@@ -20,12 +20,14 @@ EXPECTED_STACK = [
     "ExceptionTelemetryMiddleware",
     "CORSMiddleware",
     "SecurityHeadersMiddleware",
+    "RequestLogMiddleware",
     "RequestIdMiddleware",
     "ExceptionMiddleware",
     "AsyncExitStackMiddleware",
     "APIRouter",
 ]
-"""The built chain, outermost first (same walk the middleware demo proves)."""
+"""The built chain, outermost first (same walk the middleware demo proves);
+RequestLogMiddleware (topic 33) wraps the request-id layer it reads from."""
 
 EXPECTED_DEPS = [
     {"param": "query", "provider": "PostListQuery", "providerKind": "model"},

@@ -7,7 +7,11 @@ The id is echoed on every response's ``x-request-id`` header, bound to a
 ``ContextVar`` so structlog can pick it up anywhere in the call stack, and
 mirrored onto the ASGI scope's state so even the outermost
 ServerErrorMiddleware handler — which runs *outside* this middleware — can
-recover it after the contextvar has been reset during unwinding.
+recover it after the contextvar has been reset during unwinding. Topic 33
+made the structlog pickup real: the id is also BOUND as a structlog
+contextvar for the duration of the exchange, so every log line any code in
+the request writes carries ``request_id`` without passing it at each call
+site (the pipeline's ``merge_contextvars`` processor merges it in).
 
 Implementation history, on record: this layer began life as a
 ``BaseHTTPMiddleware`` subclass (readability first — the middleware topic
@@ -27,6 +31,7 @@ id serves logging only.
 from contextvars import ContextVar
 from uuid import uuid4
 
+import structlog
 from fastapi import Request
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -77,6 +82,19 @@ def _mirror_into_scope(scope: Scope, request_id: str) -> None:
     scope.setdefault("state", {})["request_id"] = request_id
 
 
+def _bind_log_context(request_id: str) -> None:
+    """Bind the id as a structlog contextvar: every log line the request's
+    code writes (handler, dependencies, adapters) carries ``request_id``
+    automatically, merged in by the pipeline's first processor."""
+    structlog.contextvars.bind_contextvars(request_id=request_id)
+
+
+def _unbind_log_context() -> None:
+    """Remove the bound id — the ``finally`` that resets the contextvar calls
+    this, so no log line outside a request inherits a stale id."""
+    structlog.contextvars.unbind_contextvars("request_id")
+
+
 class RequestIdMiddleware:
     """Assign/expose the request id for every HTTP and websocket scope."""
 
@@ -96,6 +114,9 @@ class RequestIdMiddleware:
         # Mirror into the shared ASGI scope so handlers outside this
         # middleware (ServerErrorMiddleware's 500 path) still see the id.
         _mirror_into_scope(scope, request_id)
+        # Bind into structlog's context so every log line this request's
+        # code writes carries the id without passing it at each call site.
+        _bind_log_context(request_id)
 
         if scope["type"] == "websocket":
             # A websocket has no response headers to stamp — the id binds so
@@ -103,6 +124,7 @@ class RequestIdMiddleware:
             try:
                 await self.app(scope, receive, send)
             finally:
+                _unbind_log_context()
                 _request_id.reset(token)
             return
 
@@ -118,4 +140,5 @@ class RequestIdMiddleware:
         try:
             await self.app(scope, receive, send_with_request_id)
         finally:
+            _unbind_log_context()
             _request_id.reset(token)

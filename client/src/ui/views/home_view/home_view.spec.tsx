@@ -53,92 +53,6 @@ const contentIndex = {
 
 const emptyIndex = { version: 1, groups: [], topics: [] };
 
-/** The nine planned (not-yet-authored) curriculum topic ids. */
-const PLANNED_TOPIC_IDS = [
-  'dependency-management',
-  'observability',
-  'debugging',
-  'deployment',
-  'performance',
-  'reliability',
-  'scaling',
-  'third-party',
-  'advanced-architecture',
-];
-
-/** The authored tail of the real registry (groups and curriculum orders as
- * served today) — the fixture the planned-topic merge is rendered against. */
-const authoredTailIndex = {
-  version: 1,
-  groups: [
-    { id: 'foundations', title: 'Foundations', order: 1 },
-    { id: 'platform', title: 'Platform', order: 8 },
-    { id: 'capstones', title: 'Capstones', order: 10 },
-  ],
-  topics: [
-    {
-      id: 'python-language',
-      title: 'Python Language',
-      group: 'foundations',
-      order: 1,
-      sectionCount: 11,
-    },
-    {
-      id: 'exception-handling',
-      title: 'Exception handling',
-      group: 'platform',
-      order: 30,
-      sectionCount: 9,
-    },
-    {
-      id: 'architecture',
-      title: 'Architecture',
-      group: 'platform',
-      order: 32,
-      sectionCount: 9,
-    },
-    {
-      id: 'testing',
-      title: 'Testing',
-      group: 'platform',
-      order: 34,
-      sectionCount: 10,
-    },
-    {
-      id: 'environments',
-      title: 'Environments',
-      group: 'platform',
-      order: 36,
-      sectionCount: 7,
-    },
-    {
-      id: 'best-practices',
-      title: 'Best practices',
-      group: 'capstones',
-      order: 41,
-      sectionCount: 12,
-    },
-  ],
-};
-
-/** A planned card is a plain (keyboard-inert) div: no anchor, no href, no
- * route — only the coming-soon affordance. */
-function expectComingSoonCard(card: HTMLElement): void {
-  expect(card.tagName).toBe('DIV');
-  expect(card.querySelector('a')).toBeNull();
-  expect(card).not.toHaveAttribute('href');
-  expect(card).toHaveAttribute('aria-disabled', 'true');
-  expect(card).toHaveAttribute('title', 'Coming soon');
-  expect(card).toHaveTextContent('coming soon');
-}
-
-/** Asserts `after` renders later in the document than `before`. */
-function expectFollows(before: HTMLElement, after: HTMLElement): void {
-  expect(
-    before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING,
-  ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-}
-
 function renderHome() {
   return render(
     <MemoryRouter>
@@ -186,68 +100,6 @@ describe('HomeView', () => {
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
-  it('renders the nine planned topics as disabled coming-soon cards: ship reads between platform and capstones, planned entries interleave by curriculum order, authored cards stay links', async () => {
-    stubApiFetch([
-      { url: '/api/health', body: healthOk },
-      { url: '/api/content', body: authoredTailIndex },
-    ]);
-
-    renderHome();
-
-    await screen.findByTestId('topic-card-python-language');
-
-    // All nine planned cards render, disabled and non-navigable.
-    const plannedCards = PLANNED_TOPIC_IDS.map((id) =>
-      screen.getByTestId(`topic-card-${id}`),
-    );
-    expect(plannedCards).toHaveLength(9);
-    for (const card of plannedCards) {
-      expectComingSoonCard(card);
-    }
-
-    // The six authored cards are untouched: real links to their topic pages.
-    for (const id of [
-      'python-language',
-      'exception-handling',
-      'architecture',
-      'testing',
-      'environments',
-      'best-practices',
-    ]) {
-      const card = screen.getByTestId(`topic-card-${id}`);
-      expect(card.tagName).toBe('A');
-      expect(card).toHaveAttribute('href', `/topics/${id}`);
-      expect(card).not.toHaveAttribute('aria-disabled');
-    }
-
-    // The client-only ship group reads between platform and capstones.
-    expectFollows(screen.getByText('Platform'), screen.getByText('Ship'));
-    expectFollows(screen.getByText('Ship'), screen.getByText('Capstones'));
-
-    // Planned entries interleave with authored ones by curriculum order…
-    expectFollows(
-      screen.getByTestId('topic-card-exception-handling'),
-      screen.getByTestId('topic-card-dependency-management'),
-    );
-    expectFollows(
-      screen.getByTestId('topic-card-dependency-management'),
-      screen.getByTestId('topic-card-architecture'),
-    );
-    expectFollows(
-      screen.getByTestId('topic-card-testing'),
-      screen.getByTestId('topic-card-debugging'),
-    );
-    // …including capstones, after the authored best-practices.
-    expectFollows(
-      screen.getByTestId('topic-card-best-practices'),
-      screen.getByTestId('topic-card-third-party'),
-    );
-    expectFollows(
-      screen.getByTestId('topic-card-third-party'),
-      screen.getByTestId('topic-card-advanced-architecture'),
-    );
-  });
-
   it('renders the friendly landing-soon state for an EMPTY registry (zero topics)', async () => {
     stubApiFetch([
       { url: '/api/health', body: healthOk },
@@ -259,12 +111,11 @@ describe('HomeView', () => {
     const landing = await screen.findByTestId('curriculum-landing-soon');
     expect(landing).toHaveTextContent('The curriculum is landing soon');
     expect(landing).toHaveTextContent('being authored');
-    // No crash, no topic cards, no error panel — and no planned cards either:
-    // an empty registry is the landing-soon state, not a preview of the
-    // curriculum (the merge only augments a non-empty index).
+    // No crash, no topic cards, no error panel — an empty registry renders
+    // the landing-soon note and nothing else.
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(screen.queryByTestId('topic-map-loading')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('topic-card-deployment')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('topic-card-python-language')).not.toBeInTheDocument();
   });
 
   it('shows the error panel with envelope diagnostics, then recovers when retry re-runs the load', async () => {

@@ -7,7 +7,6 @@ import type {
   TopicSummary,
 } from '../../../domain/content/content';
 import type { ListContentUseCase } from '../../../domain/content/list-content-usecase';
-import { mergePlannedTopics } from '../../../domain/content/planned-topics';
 import type { GetHealthUseCase } from '../../../domain/health/get-health-usecase';
 
 /* ---- health chip (hero) — the Phase 0 pipeline, now container-wired ---- */
@@ -77,10 +76,9 @@ export interface TopicMapState {
  * default parameter (react-guide `usePosts` style) so specs can substitute
  * fakes.
  *
- * A ready index is augmented with the client-side planned-topic map
- * (see domain/content/planned-topics.ts) so the topic map reads like the full
- * curriculum; an EMPTY served registry stays the pure landing-soon state —
- * planned cards preview the curriculum, they are not a substitute for it.
+ * A ready index is rendered exactly as served — the authored curriculum is
+ * the whole map; an EMPTY served registry is its own distinct landing-soon
+ * state.
  */
 export function useContentIndex(
   listContentUseCase: ListContentUseCase = container.listContentUseCase,
@@ -98,7 +96,7 @@ export function useContentIndex(
         setStatus(
           result.value.topics.length === 0
             ? { state: 'empty' }
-            : { state: 'ready', index: mergePlannedTopics(result.value) },
+            : { state: 'ready', index: result.value },
         );
       } else {
         setStatus({ state: 'error', failure: result.failure });

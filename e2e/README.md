@@ -4,8 +4,9 @@ Three real-browser specs, small on purpose — each pins one wiring fact no
 in-process test can see (the rendered page and the nginx → FastAPI proxy
 hop):
 
-- `home.spec.ts` — the topic map renders from the content API: all 9 groups,
-  34 populated topic links, planned topics as inert coming-soon cards.
+- `home.spec.ts` — the topic map renders from the content API: all 10 groups,
+  43 populated topic links, zero coming-soon cards (the planned-card
+  machinery is retired).
 - `topic.spec.ts` — a topic page renders: sections, collapsed-by-default
   code blocks, the terminal companion, and a mounted live-demo panel.
 - `console.spec.ts` — home + a topic page open with zero console errors.

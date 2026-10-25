@@ -763,7 +763,8 @@ TOPIC = Topic(
                         "production's stricter flags — the dev group "
                         "stays out entirely, and the project installs as "
                         "a built wheel rather than editable source, so "
-                        "the final image needs no source tree on disk:"
+                        "the package runs from the venv with no source "
+                        "tree on disk:"
                     ),
                 ),
                 CodeBlock(
@@ -780,7 +781,8 @@ TOPIC = Topic(
                         "\n"
                         "COPY server/ ./\n"
                         "# Second sync installs the guide package into the venv as a static (built)\n"
-                        "# copy — the final image needs no source tree on disk.\n"
+                        "# copy — the final image runs the package from the venv alone (the one\n"
+                        "# source it still carries is the migration tree; see the runtime stage).\n"
                         "RUN uv sync --locked --no-dev --no-editable"
                     ),
                 ),

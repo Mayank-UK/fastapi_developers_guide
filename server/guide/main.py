@@ -142,6 +142,7 @@ from guide.domain.authz.comments import CommentLedger
 from guide.domain.authz.engine import PolicyEngine
 from guide.domain.authz.principals import PrincipalResolver
 from guide.domain.caching.service import CacheAsidePostsService
+from guide.domain.demos.demo_reset import build_demo_reset_service
 from guide.domain.demos.request_methods import NoteStore
 from guide.domain.files.service import FilesWorkbenchService
 from guide.domain.files.storage import InMemoryFileStore
@@ -202,6 +203,7 @@ from guide.presentation.routers.demo import realtime as demo_realtime
 from guide.presentation.routers.demo import redis as demo_redis
 from guide.presentation.routers.demo import reliability as demo_reliability
 from guide.presentation.routers.demo import reqres as demo_reqres
+from guide.presentation.routers.demo import reset as demo_reset
 from guide.presentation.routers.demo import routing as demo_routing
 from guide.presentation.routers.demo import runtime as demo_runtime
 from guide.presentation.routers.demo import scaling as demo_scaling
@@ -400,6 +402,27 @@ def create_app() -> FastAPI:
     # over the same redis, the same catalog, the same policy.
     app.state.jobs_service = JobsConsoleService(ArqJobs(create_arq_pool_factory(config)))
 
+    # The shared demo reset (Phase 12): every participant over the reset
+    # path it ALREADY owns — the scenario store, the caching lab's
+    # invalidation, the shared counter's delete, the jobs console's reset,
+    # the PII store's reseed, the log ring's clear. The posts reseed is the
+    # one place the composition root reaches past the port on purpose: the
+    # adapter's reset-to-seed is a demo affordance the RESOURCE port
+    # deliberately does not carry, so the guard below re-establishes the
+    # concrete type the wiring itself just built.
+    if not isinstance(posts_repository, InMemoryPostRepository):
+        raise RuntimeError(
+            "the demo reset's posts participant needs the in-memory adapter"
+        )
+    app.state.demo_reset_service = build_demo_reset_service(
+        scenario=app.state.scenario,
+        reset_posts=posts_repository.reset,
+        counter=app.state.shared_counter,
+        caching=app.state.caching_service,
+        jobs=app.state.jobs_service,
+        pii_records=app.state.pii_records,
+    )
+
     # Middleware stack (added innermost-first): request ids innermost, the
     # security headers stamping EVERY response (error envelopes included),
     # CORS outermost so even inner error responses carry the CORS verdict —
@@ -525,6 +548,9 @@ def create_app() -> FastAPI:
     # teaches around, degraded honestly where the repo root is not
     # mounted.
     app.include_router(demo_thirdparty.router)
+    # Phase 12's shared demo reset: the terminal companion's one-call
+    # return-to-baseline over every demo state's existing reset path.
+    app.include_router(demo_reset.router)
     return app
 
 

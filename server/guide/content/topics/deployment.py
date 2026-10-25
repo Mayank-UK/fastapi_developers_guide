@@ -217,8 +217,16 @@ TOPIC = Topic(
                         "install-project, there is nothing to build "
                         "yet); the second installs the guide package as "
                         "--no-editable — a static, built copy — so the "
-                        "final image needs no source tree on disk, only "
-                        "the venv."
+                        "final image runs the package from the venv "
+                        "alone. The one source the image still carries "
+                        "is the migration tree: the lifespan migrates "
+                        "at boot, its paths resolve from the module, "
+                        "and inside the image that module is a wheel in "
+                        "site-packages — no checkout beside it — so the "
+                        "runtime stage COPYies alembic.ini + alembic/ to "
+                        "the WORKDIR and lifecycle.py falls back to that "
+                        "copy (without it, prod boots would skip the "
+                        "migration and serve a database with no tables)."
                     ),
                 ),
                 CodeBlock(
@@ -235,6 +243,13 @@ TOPIC = Topic(
                         "\n"
                         "WORKDIR /app\n"
                         "COPY --from=build --chown=guide:guide /app/.venv /app/.venv\n"
+                        "# Migration assets: the startup migration resolves the repo checkout from\n"
+                        "# the module — which, in this image, is the venv's site-packages with no\n"
+                        "# alembic tree beside it — so the SAME single tree (server/alembic.ini +\n"
+                        "# server/alembic/) ships here at the WORKDIR, root-owned and therefore\n"
+                        "# read-only to the app user; guide/data/db/lifecycle.py falls back to it.\n"
+                        "COPY server/alembic.ini ./alembic.ini\n"
+                        "COPY server/alembic ./alembic\n"
                         "\n"
                         'ENV PATH="/app/.venv/bin:$PATH"\n'
                         "\n"

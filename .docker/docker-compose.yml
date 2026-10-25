@@ -177,7 +177,7 @@ volumes:
   # Without `external: true` compose prefixes these with the project name and
   # creates EMPTY twins, silently forcing full dependency re-downloads. On a
   # fresh machine before any verify run, pre-create them once:
-  #   docker volume create fdg-uv fdg-npm
+  #   docker volume create fdg-uv && docker volume create fdg-npm
   fdg-uv:
     name: fdg-uv
     external: true

@@ -213,6 +213,19 @@ def _ordered(posts: list[Post], sort: str) -> list[Post]:
     return sorted(posts, key=lambda post: (post.created_at, post.id), reverse=True)
 
 
+def _seeded_posts() -> dict[str, Post]:
+    """The fixed twelve as a fresh dict — the constructor's seed, reset's target."""
+    return {
+        seed_post.post_id: Post(
+            id=seed_post.post_id,
+            **seed_post.draft.model_dump(),
+            created_at=seed_post.created_at,
+            updated_at=seed_post.created_at,
+        )
+        for seed_post in SEED_POSTS
+    }
+
+
 class InMemoryPostRepository:
     """In-memory posts: seeded, per-app, deliberately unpersisted.
 
@@ -223,15 +236,7 @@ class InMemoryPostRepository:
 
     def __init__(self, seed: bool = True) -> None:
         """Start empty or with the fixed twelve-post seed."""
-        self._posts: dict[str, Post] = {}
-        if seed:
-            for seed_post in SEED_POSTS:
-                self._posts[seed_post.post_id] = Post(
-                    id=seed_post.post_id,
-                    **seed_post.draft.model_dump(),
-                    created_at=seed_post.created_at,
-                    updated_at=seed_post.created_at,
-                )
+        self._posts: dict[str, Post] = _seeded_posts() if seed else {}
 
     def _unique_slug(self, base: str) -> str:
         """Suffix -2, -3, … until the slug is free (titles may collide)."""
@@ -286,3 +291,18 @@ class InMemoryPostRepository:
         )
         self._posts[post_id] = replaced
         return replaced
+
+    def reset(self) -> int:
+        """Discard everything and reseed the fixed twelve; answer what died.
+
+        The shared demo reset's participant: this repository is the ONE
+        instance ``/api/posts``, GraphQL, gRPC, and the caching lab all
+        serve, so one reseed returns the whole posts surface to its boot
+        state. Not on the ``PostRepository`` port on purpose — reset-to-
+        seed is a demo affordance of the in-memory adapter, not a verb a
+        real database repository could honor; only the composition root
+        (which knows the concrete type it wired) calls it.
+        """
+        discarded = len(self._posts)
+        self._posts = _seeded_posts()
+        return discarded

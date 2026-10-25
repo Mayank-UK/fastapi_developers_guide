@@ -9,11 +9,9 @@ import { groupTopics, useContentIndex, useHealth, type HealthChipState } from '.
  * HomeView — the guide's front door: hero with the live health chip and the
  * curriculum index (topic map) rendered from the content API. Like every
  * screen in this app it owns no teaching content of its own; the topic map is
- * what the server serves, augmented with the client-side planned-topic map
- * (see domain/content/planned-topics.ts) so the not-yet-authored curriculum
- * appears as disabled "coming soon" cards. An EMPTY index is a valid state
- * (the registry fills in as topics land) and renders a friendly landing note,
- * never a crash.
+ * exactly what the server serves — the authored curriculum. An EMPTY index is
+ * a valid state (the registry fills in as topics land) and renders a friendly
+ * landing note, never a crash.
  */
 export function HomeView() {
   const health = useHealth();
@@ -43,7 +41,7 @@ export function HomeView() {
         <SectionWrapper
           id="topic-map"
           title="Topic map"
-          lead="Every topic the guide teaches, grouped like the curriculum. Authored topics link to their page, rendered from the content API; topics still being written appear as disabled coming-soon cards."
+          lead="Every topic the guide teaches, grouped like the curriculum. Each card links to its topic page, rendered live from the content API."
         >
           {groupTopics(map.status.index).map(({ group, topics }) =>
             topics.length === 0 ? null : (
@@ -100,10 +98,9 @@ function TopicCard({ topic }: { topic: TopicSummary }) {
     </span>
   );
 
-  // Zero sections = not authored yet. This serves both served-but-empty
-  // summaries and the client-side planned topics: a plain (non-focusable,
-  // keyboard-inert) div — no link, no route — with an explicit coming-soon
-  // affordance.
+  // Zero sections = not authored yet. A served-but-empty summary renders as
+  // a plain (non-focusable, keyboard-inert) div — no link, no route — with
+  // an explicit coming-soon affordance.
   if (topic.sectionCount === 0) {
     return (
       <div

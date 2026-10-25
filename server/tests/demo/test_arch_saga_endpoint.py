@@ -116,6 +116,54 @@ def test_the_panel_is_deterministic_across_requests(client: TestClient) -> None:
     assert first["balances"] == second["balances"]
 
 
+def test_the_full_wire_shape_is_pinned_recursively(client: TestClient) -> None:
+    """Pin EVERY key set and nullability at every depth of the payload.
+
+    The client DTO validates this shape field-by-field, so any change to
+    a key set or a field's nullability is wire drift that must fail HERE
+    — before the client panel can break against it in a browser. The
+    one genuinely nullable field is the runs' ``failureStep``: ``None``
+    for the committed run, the failed step's name otherwise; the balance
+    rows' numbers ride the wire as STRINGS.
+    """
+    body = client.get(SAGA_PATH).json()
+    assert set(body) == {
+        "workflow",
+        "happyRun",
+        "failureRun",
+        "balances",
+        "durability",
+        "honestyNote",
+    }
+    assert set(body["workflow"]) == {"name", "steps"}
+    for step in body["workflow"]["steps"]:
+        assert set(step) == {"action", "compensates", "describes"}
+    for run_key, failed_step in (("happyRun", None), ("failureRun", "book-shipment")):
+        run = body[run_key]
+        assert set(run) == {
+            "label",
+            "outcome",
+            "failureStep",
+            "compensationOrder",
+            "detail",
+            "entries",
+        }
+        assert run["failureStep"] == failed_step
+        assert all(isinstance(step, str) for step in run["compensationOrder"])
+        for entry in run["entries"]:
+            assert set(entry) == {"index", "phase", "step", "outcome", "evidence", "at"}
+            assert isinstance(entry["index"], int)
+            assert entry["phase"] in ("forward", "compensate")
+    for balance in body["balances"]:
+        assert set(balance) == {"metric", "before", "afterHappy", "afterFailure", "verdict"}
+        assert isinstance(balance["before"], str)
+        assert isinstance(balance["afterHappy"], str)
+        assert isinstance(balance["afterFailure"], str)
+    for row in body["durability"]:
+        assert set(row) == {"half", "what", "where"}
+    assert isinstance(body["honestyNote"], str) and body["honestyNote"] != ""
+
+
 def test_response_model_is_declared_in_openapi(client: TestClient) -> None:
     schema = client.get("/openapi.json").json()
     ref = schema["paths"][SAGA_PATH]["get"]["responses"]["200"]["content"]["application/json"][

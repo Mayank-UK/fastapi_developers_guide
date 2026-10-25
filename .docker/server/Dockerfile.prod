@@ -21,7 +21,8 @@ RUN uv sync --locked --no-dev --no-install-project
 
 COPY server/ ./
 # Second sync installs the guide package into the venv as a static (built)
-# copy — the final image needs no source tree on disk.
+# copy — the final image runs the package from the venv alone (the one
+# source it still carries is the migration tree; see the runtime stage).
 RUN uv sync --locked --no-dev --no-editable
 
 FROM python:3.13-slim-bookworm
@@ -31,6 +32,13 @@ RUN groupadd --system guide && useradd --system --gid guide --create-home guide
 
 WORKDIR /app
 COPY --from=build --chown=guide:guide /app/.venv /app/.venv
+# Migration assets: the startup migration resolves the repo checkout from
+# the module — which, in this image, is the venv's site-packages with no
+# alembic tree beside it — so the SAME single tree (server/alembic.ini +
+# server/alembic/) ships here at the WORKDIR, root-owned and therefore
+# read-only to the app user; guide/data/db/lifecycle.py falls back to it.
+COPY server/alembic.ini ./alembic.ini
+COPY server/alembic ./alembic
 
 ENV PATH="/app/.venv/bin:$PATH"
 

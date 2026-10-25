@@ -7,13 +7,22 @@ import type {
   SagaStepRow,
   SagaWorkflowRow,
 } from '../../domain/demo/arch-saga';
-import { isRecord, optionalString, requiredArray, requiredNumber, requiredString } from '../content/validate';
+import { isRecord, requiredArray, requiredNumber, requiredString } from '../content/validate';
 
 /**
- * ArchSagaDTO — the wire/transport shape of the saga panel. Every
- * field is always present on this payload; validation happens at the
+ * ArchSagaDTO — the wire/transport shape of the saga panel. Every field
+ * is always present on this payload — `failureStep` genuinely as `null`
+ * on the happy run (a committed run has no failed step), so it validates
+ * as string-or-null, never as optional-string; validation happens at the
  * boundary so a drifted wire fails HERE, not in a view.
  */
+
+function nullableString(source: Record<string, unknown>, key: string): string | null {
+  const value = source[key];
+  if (value === null) return null;
+  if (typeof value === 'string' && value !== '') return value;
+  throw new Error(`expected string or null for ${key}`);
+}
 
 function stepRowFromJson(value: unknown): SagaStepRow {
   if (!isRecord(value)) throw new Error('saga step row must be an object');
@@ -54,11 +63,10 @@ function runRowFromJson(value: unknown): SagaRunRow {
   if (outcome !== 'committed' && outcome !== 'compensated') {
     throw new Error(`saga run outcome must be committed|compensated, got ${outcome}`);
   }
-  const failureStep = optionalString(value, 'failureStep');
   return {
     label: requiredString(value, 'label'),
     outcome,
-    failureStep: failureStep ?? null,
+    failureStep: nullableString(value, 'failureStep'),
     compensationOrder: requiredArray(value, 'compensationOrder').map((item) => {
       if (typeof item !== 'string') throw new Error('compensationOrder entries must be strings');
       return item;

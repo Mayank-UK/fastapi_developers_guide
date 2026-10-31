@@ -52,6 +52,7 @@
 - Build status (close, 2026-10-25): server 1506 passed/5 skipped (arq live-worker pair flips ±2, both green) + ruff + mypy 293 files; client 108 files/502 + build; e2e 3/3 (43 links · 10 groups · zero coming-soon via aria-disabled count); root-layout.spec flake from the wave never reappeared at the final gate. Domain mayankcodeworks.com (old 301). Umami live (topic-open dedupe 3041988 ships with the close-out push). Detail + logs → devlog.md.
 
 ## Active tasks
+- Faro crash-telemetry beacon (client) ✅ 2026-10-31 (commit 59b61ab): port of edg f498a12. Tests 508/508 + build green. Needs VITE_FARO_URL + VITE_FARO_APP=fastapidevelopersguide repo Variables.
 - Prometheus exporter ✅ 2026-10-31 (commit fde8a9b, PUSHED — CI/CD deploying): GET /metrics at ROOT, include_in_schema=False (GraphQL precedent — infra endpoint, not API). prometheus-client 0.26 (NOT instrumentator — thin house router, no second middleware layer beside RequestLog/SpanLog). Forced ripples: python_language.py quote re-pin (ratchet) + deps-manifest count pins 19→20/26→27 (count-pins-grow gotcha). Verified: uv sync --locked + pytest 1510 passed/5 skipped + ruff + mypy (294 files) clean; live smoke 200 text/plain exposition + openapi-invisible. VM: infra scrapes via metrics-shim, path /metrics on :8000 (see infra repo — monitoring_scraped_apps).
 
 # Developer defined section:

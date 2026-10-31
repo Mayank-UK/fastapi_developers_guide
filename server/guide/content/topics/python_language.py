@@ -1080,7 +1080,7 @@ TOPIC = Topic(
                         "from guide.core.logging import configure_logging\n"
                         "from guide.core.request_context import RequestIdMiddleware\n"
                         "from guide.core.scenario import ScenarioStore\n"
-                        "from guide.presentation.routers import content, graphql, health, posts, realtime\n"
+                        "from guide.presentation.routers import content, graphql, health, metrics, posts, realtime\n"
                         "from guide.presentation.routers.demo import py as demo_py\n"
                         "from guide.presentation.routers.demo import scenario as demo_scenario"
                     ),

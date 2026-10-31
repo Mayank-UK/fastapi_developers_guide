@@ -35,11 +35,11 @@ def test_panel_serves_the_real_manifest_and_lock(client: TestClient) -> None:
     assert body["lockFile"] == "server/uv.lock"
     assert body["requiresPython"] == ">=3.13"
     assert [group["group"] for group in body["groups"]] == ["main", "dev"]
-    assert [group["directCount"] for group in body["groups"]] == [19, 7]
+    assert [group["directCount"] for group in body["groups"]] == [20, 7]
     assert body["honestyNote"]
 
     counts = body["counts"]
-    assert counts["direct"] == 26
+    assert counts["direct"] == 27
     assert counts["totalLocked"] == counts["direct"] + counts["transitive"] + 1
     assert counts["totalLocked"] >= 70
 
@@ -68,8 +68,8 @@ def test_direct_rows_carry_constraint_and_locked_pin(client: TestClient) -> None
 def test_the_manifest_and_lock_agree(client: TestClient) -> None:
     agreement = client.get(PANEL_PATH).json()["agreement"]
     assert agreement["agree"] is True
-    assert agreement["manifestNames"] == 19
-    assert agreement["lockNames"] == 19
+    assert agreement["manifestNames"] == 20
+    assert agreement["lockNames"] == 20
     assert agreement["missingFromLock"] == []
     assert agreement["extraInLock"] == []
 

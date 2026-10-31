@@ -174,7 +174,7 @@ from guide.domain.security.records import CustomerRecordStore
 from guide.presentation.dependencies.request_span import SpanLog
 from guide.presentation.middleware.request_log import RequestLogMiddleware
 from guide.presentation.middleware.security_headers import SecurityHeadersMiddleware
-from guide.presentation.routers import content, graphql, health, posts, realtime
+from guide.presentation.routers import content, graphql, health, metrics, posts, realtime
 from guide.presentation.routers.demo import api as demo_api
 from guide.presentation.routers.demo import arch as demo_arch
 from guide.presentation.routers.demo import auth as demo_auth
@@ -446,6 +446,10 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     app.include_router(health.router)
+    # The monitoring scrape target: the default collector registry in the
+    # Prometheus text exposition format — a line-protocol contract, not a
+    # JSON API (hence invisible to OpenAPI, like the GraphQL mount).
+    app.include_router(metrics.router)
     app.include_router(content.router)
     app.include_router(posts.router)
     # The GraphQL mount: resolvers over the SAME posts use cases the REST
